@@ -1,0 +1,10 @@
+Binding: initialise_project
+Title: phenotools project template
+OpenFiles: README.md
+# In the project you can also add icons (the icon should be a PNG, smaller than 64kb
+# and in the inst/rstudio/templates folder
+Icon: phenotools.png
+Parameter: template_filepath
+Widget: FileInput
+Label: Locate new_project_template directory
+Default: "N:/data/durable/common/new_project_template"
