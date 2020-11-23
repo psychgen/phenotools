@@ -2,7 +2,6 @@
 
 export(available_variables)
 export(curate_dataset)
-export(hello)
 export(initialise_project)
 export(initialize_project)
 importFrom(dplyr,"%>%")

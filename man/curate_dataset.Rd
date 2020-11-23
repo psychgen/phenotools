@@ -4,13 +4,13 @@
 \alias{curate_dataset}
 \title{Initialise project}
 \usage{
-curate_dataset(scales_required = "none_specified",
+curate_dataset(variables_required = "none_specified",
   pheno_data_root_dir = "N:/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
   PDB = "2306", completion_threshold = 0.5, return_items = FALSE,
   consistent_items = FALSE, transformations = NULL)
 }
 \arguments{
-\item{scales_required}{What scales are required? See
+\item{variables_required}{What variables are required? See
 \code{available_variables} for a valid inputs}
 
 \item{pheno_data_root_dir}{Where is the raw MoBa phenotypic data?}
@@ -23,7 +23,7 @@ to be present for a scale score to be computed?}
 \item{return_items}{Output item-level data?}
 
 \item{consistent_items}{Only use wave-to-wave consistent items
-for scales that are measured longitudinally?}
+for variables that are measured longitudinally?}
 
 \item{transformations}{Not yet implemented}
 }

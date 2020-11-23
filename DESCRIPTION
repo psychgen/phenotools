@@ -1,6 +1,6 @@
 Package: phenotools
 Type: Package
-Title: Reproducibly Curates Datasets Based on MoBa and Linked Registry Sources
+Title: Facilitates Reproducible Workflows With Data from MoBa and Linked Registry Sources
 Version: 0.1.0
 Authors@R: person("Laurie", "Hannigan", email = "lauriejhannigan@gmail.com",
                   role = c("aut", "cre"))
@@ -13,4 +13,5 @@ RoxygenNote: 6.1.1
 Depends: R (>= 3.6)
 Imports:
     dplyr, 
-    stringr
+    stringr,
+    haven
