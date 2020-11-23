@@ -50,20 +50,53 @@ curate_dataset <- function(variables_required="none_specified",
   if(any(sources$source == "moba")){
 
     moba_vars <- reqd_vars %>%
-      dplyr::filter(source =="moba")
+      dplyr::filter(source =="moba") %>%
+      dplyr::left_join(moba)
 
     ##Create data.frame of PREG_IDs to aggregate created variables
     moba_data <-
       suppressMessages(
         suppressWarnings(
           haven::read_spss(paste0(pheno_data_root_dir,"PDB",PDB,"_MBRN_541_v12.sav")) %>%
-            dplyr::select(preg_id = dplyr::matches("PREG_ID"),BARN_NR)))
+            dplyr::select(preg_id = dplyr::matches("PREG_ID"),BARN_NR))) %>%
+      mutate(preg_id = as.integer(preg_id))
+    ##Add M_ID and F_ID variables from SV info
+    sv_info <- read.delim("N:/data/durable/data/MoBaPhenoData/PDB2306_MoBa_v12/Datfiles/PDB2306_SV_INFO_v12.dat")
+    colnames(sv_info) <- c("preg_id", "m_id","f_id","birth_yr")
+
+    moba_data <- moba_data %>%
+      dplyr::left_join(sv_info)%>%
+      dplyr::mutate(preg_id=as.character(preg_id),
+                    m_id=as.character(m_id),
+                    f_id=as.character(f_id))
 
     #Get item-level datasets and combine
-    if(any(unique(moba_vars$questionnaire)=="Q1")){
-      q1vars <- haven::read_spss(paste0(pheno_data_root_dir,"PDB",PDB,"_Q1_v12.sav")) %>%
-        dplyr::select(preg_id = dplyr::matches("PREG_ID"),
-                      unlist(strsplit(paste0(dplyr::filter(moba,questionnaire %in% "Q1")$items, collapse=","),",")))
+
+    for(q in unique(moba_vars$questionnaire)){
+
+      if(q %in% c("Q1","Q3","QF")){
+        qvars_temp <- haven::read_spss(paste0(pheno_data_root_dir,"PDB",PDB,"_", q,"_v12.sav")) %>%
+          dplyr::select(preg_id = dplyr::matches("PREG_ID"),
+                        unlist(strsplit(paste0(dplyr::filter(moba_vars,questionnaire == q)$items, collapse=","),","))) %>%
+          dplyr::mutate(preg_id=as.character(preg_id))
+      }
+      if(q %in% c("Far2")){
+        qvars_temp <- haven::read_spss(paste0(pheno_data_root_dir,"PDB",PDB,"_", q,"_v12.sav")) %>%
+          dplyr::select(f_id = dplyr::matches("F_ID"),
+                        unlist(strsplit(paste0(dplyr::filter(moba_vars,questionnaire == q)$items, collapse=","),","))) %>%
+          dplyr::mutate(f_id=as.character(f_id))
+      }
+      if(q %in% c("Q4_6months","Q5_18months","Q5yrs","Q6_3yrs","Q7yrs","Q8yrs")){
+        qvars_temp <- haven::read_spss(paste0(pheno_data_root_dir,"PDB",PDB,"_", q,"_v12.sav")) %>%
+          dplyr::select(preg_id = dplyr::matches("PREG_ID"), BARN_NR,
+                        unlist(strsplit(paste0(dplyr::filter(moba_vars,questionnaire == q)$items, collapse=","),","))) %>%
+          dplyr::mutate(preg_id=as.character(preg_id))
+
+
+      }
+
+      suppressWarnings(moba_data <- moba_data %>%
+        dplyr::left_join(qvars_temp))
     }
 
 
@@ -71,6 +104,6 @@ curate_dataset <- function(variables_required="none_specified",
 
 
 
- return(moba_data)
+  return(moba_data)
 }
 
