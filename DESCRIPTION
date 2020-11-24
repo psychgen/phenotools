@@ -14,4 +14,5 @@ Depends: R (>= 3.6)
 Imports:
     dplyr, 
     stringr,
+    tidyr,
     haven

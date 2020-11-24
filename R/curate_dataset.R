@@ -74,6 +74,8 @@ curate_dataset <- function(variables_required="none_specified",
 
     for(q in unique(moba_vars$questionnaire)){
 
+      message(paste0("\nLoading data from questionnaire ",match(q,unique(moba_vars$questionnaire))," of ", length(unique(moba_vars$questionnaire)) ))
+
       if(q %in% c("Q1","Q3","QF")){
         qvars_temp <- haven::read_spss(paste0(pheno_data_root_dir,"PDB",PDB,"_", q,"_v12.sav")) %>%
           dplyr::select(preg_id = dplyr::matches("PREG_ID"),
@@ -99,7 +101,58 @@ curate_dataset <- function(variables_required="none_specified",
         dplyr::left_join(qvars_temp))
     }
 
+    # create a lookup table with relevant scales, items in long format
+    moba_vars_long <- data.frame()
+    for(v in unique(moba_vars$var_name)){
+      temp_v <- moba_vars %>%
+        dplyr::filter(var_name == v) %>%
+        tidyr::separate(items, into=c(paste0("i",
+                                             seq(1,length(unlist(strsplit(
+                                               paste0(dplyr::filter(moba_vars,var_name == v)$items, collapse=","),",")) ))
+                                             )
+                                      ), sep = "," ) %>%
+        tidyr::gather(item_no, item_name, -measure:-likert, -consistent:-notes)
+      moba_vars_long <- rbind(moba_vars_long, temp_v)
+    }
 
+    #separate out scale and non-scale vars (defined by presence of helper function)
+
+    moba_scale_vars <- moba_vars %>%
+      dplyr::filter(is.na(helper))
+    moba_scale_vars_long <- moba_vars_long %>%
+      dplyr::filter(is.na(helper))
+    moba_other_vars <- moba_vars %>%
+      dplyr::filter(!is.na(helper))
+    moba_other_vars_long <- moba_vars_long %>%
+      dplyr::filter(!is.na(helper))
+
+    # process scale vars - should create progress indicator for this as it can take a while (the below is a v rough approx)
+    if(nrow(moba_scale_vars)>0){
+      message(paste0("\nProcessing MoBa scale variables. These are: \n\n",paste0(c(moba_scale_vars$var_name), collapse="", sep="\n"),
+                     "\nExpect a wait of up to:\n\n",round(1.191681*ncol(moba_data),1), " seconds (",
+                     round((1.191681*ncol(moba_data))/60,1)," mins)\n
+for your requested scales..." ))
+
+      moba_scale_data <- moba_data %>%
+        dplyr::select(preg_id,m_id,f_id,BARN_NR,birth_yr,unique(moba_scale_vars_long$item_name)) %>%
+        dplyr::mutate_at(dplyr::vars(-preg_id:-birth_yr), list(~haven::as_factor(.) )) %>%
+        tidyr::gather(item_name, val, -preg_id:-birth_yr) %>%
+        dplyr::left_join(moba_scale_vars_long %>%
+                           dplyr::select(item_name, var_name, tidyselect::matches("response") )) %>%
+        dplyr::mutate(num_val = dplyr::case_when(val == response0 ~ 0,
+                                                 val == response1 ~ 1,
+                                                 val == response2 ~ 2,
+                                                 val == response3 ~ 3,
+                                                 val == response4 ~ 4) ) %>%  ### Should pre-emptively add in more response levels
+        dplyr::group_by(preg_id,BARN_NR,var_name) %>%
+        dplyr::summarise(score = ifelse(sum(!is.na(num_val))>=(completion_threshold*n()),
+                                        round(mean(num_val, na.rm=T)*n(),0),
+                                        NA)) %>%
+        tidyr::spread(var_name, score)
+    }
+    if(nrow(moba_other_vars)>0){
+      message("\nProcessing other MoBa vars. These are: \n\n",paste0(c(moba_other_vars$var_name), collapse="", sep="\n"))
+    }
   }
 
 
