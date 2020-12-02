@@ -2,6 +2,8 @@
 
 export(available_variables)
 export(curate_dataset)
+export(curate_moba_scales)
 export(initialise_project)
 export(initialize_project)
+export(moba_bmi)
 importFrom(dplyr,"%>%")

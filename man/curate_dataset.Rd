@@ -2,7 +2,7 @@
 % Please edit documentation in R/curate_dataset.R
 \name{curate_dataset}
 \alias{curate_dataset}
-\title{Initialise project}
+\title{Curate dataset}
 \usage{
 curate_dataset(variables_required = "none_specified",
   pheno_data_root_dir = "N:/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
@@ -28,8 +28,9 @@ for variables that are measured longitudinally?}
 \item{transformations}{Not yet implemented}
 }
 \description{
-\code{initialise_project} populates a specified directory
-with the file structure required to make full use of phenotools
+\code{curate_dataset} is the main workhorse of the data preparation
+component of phenotools, producing analysis-ready datasets with
+specified variables from MoBa and other registry sources
 }
 \details{
 Detailed description...

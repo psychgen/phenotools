@@ -11,6 +11,7 @@ knitr::opts_chunk$set(
   fig.path = "man/figures/README-",
   out.width = "100%"
 )
+library(phenotools)
 ```
 
 ```{r, echo=FALSE}
@@ -21,36 +22,29 @@ htmltools::img(src = knitr::image_uri(file.path(getwd(),"inst","rstudio","templa
 
 # phenotools
 
-The goal of phenotools is to ...
+The goal of this package is to allow researchers to use phenotypic data from MoBa and linked registry sources reproducibly and efficiently. 
 
 ## Installation
 
-You can install the released version of phenotools from [CRAN](https://CRAN.R-project.org) with:
+You can install the latest working version of phenotools from source as follows...
 
-``` r
-install.packages("phenotools")
+```{r install, echo=TRUE, eval= FALSE}
+install.packages()
 ```
 
-## Example
+At present, any missing dependencies need to be installed manually from the TSD CRAN copy, i.e.,
 
-This is a basic example which shows you how to solve a common problem:
-
-```{r example}
-## basic example code
+```{r dependencies, echo=TRUE, eval= FALSE}
+install.packages()
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
+## Overview and project set-up
 
-```{r cars}
-summary(cars)
-```
+The package primarily provides functions to assist you at the beginning and end of your analytic workflow; specifically, in the respective areas of data preparation, and analysis documentation and reporting. These are outlined below. However, to make full usage of the phenotools package, it is advisable to begin by using it to set up your analytic project with a pre-defined structure using the `initialise_project` function:
 
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date.
+## Data preparation with phenotools
 
-You can also embed plots, for example:
 
-```{r pressure, echo = FALSE}
-plot(pressure)
-```
 
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub!
+
+## Analysis documentation and reporting with phenotools (in development)
