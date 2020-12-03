@@ -18,7 +18,7 @@ library(phenotools)
 
 ![Phenotools.](inst/rstudio/templates/phenotools.png)
 
-&nbsp;
+
 
 #phenotools
 
@@ -50,6 +50,7 @@ install.packages('dplyr',
 You can also install from source if needed.
 
 &nbsp;
+&nbsp;
 
 ## Overview and project set-up
 
@@ -72,13 +73,15 @@ This creates a project directory and Rstudio .proj file in your specified locati
 
 <center>
 
-![file structure screenshot](inst/rstudio/templates/newproj_filestr.jpg){width=250px}
+![file structure screenshot](inst/rstudio/templates/newproj_filestr.png)
+
 
 </center>
 
 
 Using this template helps to keep consistency across analytic projects, making collaboration and reproducible working easier. Moreover, some of phenotools' reporting functions make use of this structure to find relevant files and combine them for export, so deviating too far from this core structure will restrict the extent to which the package can help you at the other end.
 
+&nbsp;
 &nbsp;
 
 ## Data preparation with phenotools
@@ -156,6 +159,7 @@ head(myitemdata)
 
 See the help pages for `curate_dataset` for more options.
 
+&nbsp;
 &nbsp;
 
 ## Analysis documentation and reporting with phenotools (in development)
