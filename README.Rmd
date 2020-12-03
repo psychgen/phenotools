@@ -15,36 +15,46 @@ library(phenotools)
 ```
 
 
-&nbsp;
-<p align="center">
+![Phenotools.](inst/rstudio/templates/phenotools.png){fig.align='right'}
 
-![Phenotools](inst/rstudio/templates/phenotools.png)
-</p>
-***
+
+#phenotools
+
+
+
 
 The goal of the **phenotools** package is to facilitate efficient and reproducible use of phenotypic data from MoBa and linked registry sources in the TSD environment. 
 
 Please contact laurie.hannigan@bristol.ac.uk with bugs, feedback, or development ideas.
 
+&nbsp;
 
 ## Installation
 
 You can install the latest working version as follows...
 
 ```{r install, echo=TRUE, eval= FALSE}
-install.packages()
+install.packages("//tsd-evs/p471/data/durable/common/software/phenotools_0.1.0.zip", 
+                 repos=NULL,
+                 type = "binary")
 ```
 
 At present, any missing dependencies need to be installed manually from the TSD CRAN copy, i.e.,
 
 ```{r dependencies, echo=TRUE, eval= FALSE}
-install.packages()
+install.packages('dplyr',
+                 repos = "file://tsd-evs/shared/R/cran")
 ```
+
+You can also install from source if needed.
+
+&nbsp;
 
 ## Overview and project set-up
 
 
 The **phenotools** package primarily provides functions to assist you at the beginning and end of your analytic workflow; specifically, in the respective areas of data preparation, and analysis documentation and reporting.
+
 
 
 ![Phenotools in TSD reproducible workflow.](inst/rstudio/templates/phenotools_workflow.jpg)
@@ -57,15 +67,17 @@ initialise_project(path="C:/Users/p471-lauriejh/newproject",
                    template_filepath="N:/data/durable/common/new_project_template/.")
 ```
 
-This creates a project directory in your specified location, populated with sub-directories and files from a template - shown here in the "Files" pane in Rstudio after opening the new project:
+This creates a project directory and Rstudio .proj file in your specified location, populated with sub-directories and files from a template - shown here in the "Files" pane in Rstudio after opening the new project:
 
 <p align="center">
 
-![Phenotools](inst/rstudio/templates/newproj_filestr.png)
+![file structure screenshot](inst/rstudio/templates/newproj_filestr.png){width=250px}
 
 </p>
 
 Using this template helps to keep consistency across analytic projects, making collaboration and reproducible working easier. Moreover, some of phenotools' reporting functions make use of this structure to find relevant files and combine them for export, so deviating too far from this core structure will restrict the extent to which the package can help you at the other end.
+
+&nbsp;
 
 ## Data preparation with phenotools
 
@@ -76,6 +88,7 @@ The first step is to ascertain what variables are available and what names you n
 ```{r available_vs, echo = T}
 available_variables(source = "moba")
 ```
+
 
 To get a dataset with a variable that you want, you need to quote its var_name as the input for the `variables_required` option in the `curate_dataset` function:
 
@@ -91,6 +104,7 @@ mydata <- curate_dataset(variables_required="scl_anx_q3",
 head(mydata)
 ```
 
+
 Other important inputs here are the root directory of the MoBa phenotypic data (SPSS format) and PDB code for the project you are working in. Both default to the correct values for the p471 TSD project.
 
 Likely, you will want a dataset with multiple phenotypes; `variables_required` needs the var_names for your variables as a concatenated string:
@@ -101,11 +115,14 @@ Likely, you will want a dataset with multiple phenotypes; `variables_required` n
 mydata <- curate_dataset(variables_required=c("scl_anx_q3","bmi_pat_q1"))
 ```
 
+
 Alternatively, you can use columns in the dataframe produced by the `available_variables` function to get a list of variables and input that: 
 
 ```{r curate2.1, echo = T}
 
 phenovars <- available_variables(source = "moba")
+
+head(phenovars)
 
 myphenovars <- dplyr::filter(phenovars,
                             stringr::str_detect(measure,"SCL"),
@@ -118,7 +135,8 @@ myphenovars$var_name
 mydata <- curate_dataset(variables_required=myphenovars$var_name)
 ```
 
-In the above cases `curate_dataset` returns a data.frame with the processed scale scores and other variables. However, if you set `{r echo=T} return_items = TRUE`, then the result of `curate_dataset` will be a list, where the first element is the scale-level dataset, and the second element is the item-level dataset.
+
+In the above cases `curate_dataset` returns a data.frame with the processed scale scores and other variables. However, if you set the `return_items` option to `TRUE`, then the result of `curate_dataset` will be a list, where the first element is the scale-level dataset, and the second element is the item-level dataset.
 
 ```{r curate3, echo = T}
 
@@ -146,5 +164,5 @@ Functions to assist with analysis documentation and reporting are currently in d
 
 * `synthesise_data()` and `simulate_data()` which make and save synthetic or simulated datasets for export with analysis code based on dataset properties and/or structure
 
-* `dataset_curation_code()` which produces an R file with the code used to generate your dataset for export
+* `dataprep_code()` which produces an R file with the code used to generate your dataset for export
 
