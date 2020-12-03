@@ -2,6 +2,8 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 <img src="inst/rstudio/templates/phenotools.png" alt="Phenotools." align="right" />
 
+ 
+
 phenotools
 ==========
 
@@ -38,8 +40,9 @@ Overview and project set-up
 
 The **phenotools** package primarily provides functions to assist you at the beginning and end of your analytic workflow; specifically, in the respective areas of data preparation, and analysis documentation and reporting.
 
+<center>
 ![Phenotools in TSD reproducible workflow.](inst/rstudio/templates/phenotools_workflow.jpg)
-
+</center>
 These functions are outlined below. However, to make full usage of the phenotools package, it is advisable to begin by using it to set up your analytic project with a pre-defined structure using the `initialise_project` function:
 
 ``` r
@@ -53,10 +56,9 @@ initialise_project(path="C:/Users/p471-lauriejh/newproject",
 
 This creates a project directory and Rstudio .proj file in your specified location, populated with sub-directories and files from a template - shown here in the "Files" pane in Rstudio after opening the new project:
 
-<p align="center">
+<center>
 <img src="inst/rstudio/templates/newproj_filestr.png" alt="file structure screenshot" width="250" />
-
-</p>
+</center>
 Using this template helps to keep consistency across analytic projects, making collaboration and reproducible working easier. Moreover, some of phenotools' reporting functions make use of this structure to find relevant files and combine them for export, so deviating too far from this core structure will restrict the extent to which the package can help you at the other end.
 
  
