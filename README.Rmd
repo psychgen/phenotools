@@ -15,11 +15,10 @@ library(phenotools)
 ```
 
 
-![Phenotools.](inst/rstudio/templates/phenotools.png){fig.align='right'}
+![Phenotools.](inst/rstudio/templates/phenotools.png){align='right'}
 
 
 #phenotools
-
 
 
 
