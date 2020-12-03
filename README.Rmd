@@ -14,33 +14,40 @@ knitr::opts_chunk$set(
 library(phenotools)
 ```
 
-
 &nbsp;
+
 <p align="center">
 
 ![Phenotools](inst/rstudio/templates/phenotools.png)
 </p>
-***
+
+&nbsp;
 
 The goal of the **phenotools** package is to facilitate efficient and reproducible use of phenotypic data from MoBa and linked registry sources in the TSD environment. 
 
 Please contact laurie.hannigan@bristol.ac.uk with bugs, feedback, or development ideas.
-
+&nbsp;
 
 ## Installation
 
 You can install the latest working version as follows...
 
 ```{r install, echo=TRUE, eval= FALSE}
-install.packages()
+install.packages("//tsd-evs/p471/data/durable/common/software/phenotools_0.1.0.zip", 
+                 repos=NULL,
+                 type = "binary")
 ```
 
 At present, any missing dependencies need to be installed manually from the TSD CRAN copy, i.e.,
 
 ```{r dependencies, echo=TRUE, eval= FALSE}
-install.packages()
+install.packages('dplyr',
+                 repos = "file://tsd-evs/shared/R/cran")
 ```
 
+You can also install from source if needed.
+
+&nbsp;
 ## Overview and project set-up
 
 
@@ -61,12 +68,13 @@ This creates a project directory in your specified location, populated with sub-
 
 <p align="center">
 
-![Phenotools](inst/rstudio/templates/newproj_filestr.png)
+![Phenotools](inst/rstudio/templates/newproj_filestr.png){width=250px}
 
 </p>
 
 Using this template helps to keep consistency across analytic projects, making collaboration and reproducible working easier. Moreover, some of phenotools' reporting functions make use of this structure to find relevant files and combine them for export, so deviating too far from this core structure will restrict the extent to which the package can help you at the other end.
 
+&nbsp;
 ## Data preparation with phenotools
 
 The main workhorse of the phenotools package is the `curate_dataset` function. The purpose of this function is to curate an analysis-ready dataset based on the variables, from MoBa and other supported sources, you request. This means that psychometric scales will be coded up for you, and derived variables such as BMI computed and returned along with specific demographic variables and family-level IDs.
@@ -107,6 +115,8 @@ Alternatively, you can use columns in the dataframe produced by the `available_v
 
 phenovars <- available_variables(source = "moba")
 
+head(phenovars)
+
 myphenovars <- dplyr::filter(phenovars,
                             stringr::str_detect(measure,"SCL"),
                             stringr::str_detect(subscale,"depression"))
@@ -146,5 +156,5 @@ Functions to assist with analysis documentation and reporting are currently in d
 
 * `synthesise_data()` and `simulate_data()` which make and save synthetic or simulated datasets for export with analysis code based on dataset properties and/or structure
 
-* `dataset_curation_code()` which produces an R file with the code used to generate your dataset for export
+* `dataprep_code()` which produces an R file with the code used to generate your dataset for export
 

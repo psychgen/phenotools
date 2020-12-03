@@ -1,15 +1,15 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
  
+
 <p align="center">
 ![Phenotools](inst/rstudio/templates/phenotools.png)
 </p>
-
-------------------------------------------------------------------------
+ 
 
 The goal of the **phenotools** package is to facilitate efficient and reproducible use of phenotypic data from MoBa and linked registry sources in the TSD environment.
 
-Please contact <laurie.hannigan@bristol.ac.uk> with bugs, feedback, or development ideas.
+Please contact <laurie.hannigan@bristol.ac.uk> with bugs, feedback, or development ideas.  
 
 Installation
 ------------
@@ -17,17 +17,21 @@ Installation
 You can install the latest working version as follows...
 
 ``` r
-install.packages()
+install.packages("//tsd-evs/p471/data/durable/common/software/phenotools_0.1.0.zip", 
+                 repos=NULL,
+                 type = "binary")
 ```
 
 At present, any missing dependencies need to be installed manually from the TSD CRAN copy, i.e.,
 
 ``` r
-install.packages()
+install.packages('dplyr',
+                 repos = "file://tsd-evs/shared/R/cran")
 ```
 
-Overview and project set-up
----------------------------
+You can also install from source if needed.
+
+  \#\# Overview and project set-up
 
 The **phenotools** package primarily provides functions to assist you at the beginning and end of your analytic workflow; specifically, in the respective areas of data preparation, and analysis documentation and reporting.
 
@@ -47,13 +51,12 @@ initialise_project(path="C:/Users/p471-lauriejh/newproject",
 This creates a project directory in your specified location, populated with sub-directories and files from a template - shown here in the "Files" pane in Rstudio after opening the new project:
 
 <p align="center">
-![Phenotools](inst/rstudio/templates/newproj_filestr.png)
+<img src="inst/rstudio/templates/newproj_filestr.png" alt="Phenotools" width="250" />
 
 </p>
 Using this template helps to keep consistency across analytic projects, making collaboration and reproducible working easier. Moreover, some of phenotools' reporting functions make use of this structure to find relevant files and combine them for export, so deviating too far from this core structure will restrict the extent to which the package can help you at the other end.
 
-Data preparation with phenotools
---------------------------------
+  \#\# Data preparation with phenotools
 
 The main workhorse of the phenotools package is the `curate_dataset` function. The purpose of this function is to curate an analysis-ready dataset based on the variables, from MoBa and other supported sources, you request. This means that psychometric scales will be coded up for you, and derived variables such as BMI computed and returned along with specific demographic variables and family-level IDs.
 
@@ -138,6 +141,17 @@ Alternatively, you can use columns in the dataframe produced by the `available_v
 
 phenovars <- available_variables(source = "moba")
 #> Values from column:var_name are valid inputs for curate_dataset()
+
+head(phenovars)
+#> # A tibble: 6 x 5
+#>   measure subscale   questionnaire var_name    source
+#>   <chr>   <chr>      <chr>         <chr>       <chr> 
+#> 1 BMI     mother     Q1            bmi_mat_q1  moba  
+#> 2 BMI     father     Q1            bmi_pat_q1  moba  
+#> 3 SCL     anxiety    Q3            scl_anx_q3  moba  
+#> 4 SCL     depression Q3            scl_dep_q3  moba  
+#> 5 SCL     <NA>       Q4_6months    scl_full_6m moba  
+#> 6 SCL     anxiety    Q4_6months    scl_anx_6m  moba
 
 myphenovars <- dplyr::filter(phenovars,
                             stringr::str_detect(measure,"SCL"),
@@ -274,4 +288,4 @@ Functions to assist with analysis documentation and reporting are currently in d
 
 -   `synthesise_data()` and `simulate_data()` which make and save synthetic or simulated datasets for export with analysis code based on dataset properties and/or structure
 
--   `dataset_curation_code()` which produces an R file with the code used to generate your dataset for export
+-   `dataprep_code()` which produces an R file with the code used to generate your dataset for export
