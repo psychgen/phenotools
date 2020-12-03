@@ -4,6 +4,9 @@
 <p align="center">
 ![Phenotools](inst/rstudio/templates/phenotools.png)
 </p>
+
+------------------------------------------------------------------------
+
 The goal of the **phenotools** package is to facilitate efficient and reproducible use of phenotypic data from MoBa and linked registry sources in the TSD environment.
 
 Please contact <laurie.hannigan@bristol.ac.uk> with bugs, feedback, or development ideas.

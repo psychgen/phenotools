@@ -14,16 +14,18 @@ knitr::opts_chunk$set(
 library(phenotools)
 ```
 
+
 &nbsp;
 <p align="center">
 
 ![Phenotools](inst/rstudio/templates/phenotools.png)
 </p>
-
+***
 
 The goal of the **phenotools** package is to facilitate efficient and reproducible use of phenotypic data from MoBa and linked registry sources in the TSD environment. 
 
 Please contact laurie.hannigan@bristol.ac.uk with bugs, feedback, or development ideas.
+
 
 ## Installation
 
@@ -41,7 +43,9 @@ install.packages()
 
 ## Overview and project set-up
 
+
 The **phenotools** package primarily provides functions to assist you at the beginning and end of your analytic workflow; specifically, in the respective areas of data preparation, and analysis documentation and reporting.
+
 
 ![Phenotools in TSD reproducible workflow.](inst/rstudio/templates/phenotools_workflow.jpg)
 
