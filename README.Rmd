@@ -16,7 +16,7 @@ library(phenotools)
 
 
 
-![Phenotools.](inst/rstudio/templates/phenotools.jpg){align='right'}
+![Phenotools.](inst/rstudio/templates/phenotools.png)
 
 &nbsp;
 

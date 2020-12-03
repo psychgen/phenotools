@@ -1,6 +1,6 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-<img src="inst/rstudio/templates/phenotools.jpg" alt="Phenotools." align="right" />
+![Phenotools.](inst/rstudio/templates/phenotools.png)
 
  
 
