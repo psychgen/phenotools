@@ -1,6 +1,6 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-<img src="inst/rstudio/templates/phenotools.png" alt="Phenotools." align="right" />
+<img src="inst/rstudio/templates/phenotools.jpg" alt="Phenotools." align="right" />
 
  
 
@@ -57,7 +57,8 @@ initialise_project(path="C:/Users/p471-lauriejh/newproject",
 This creates a project directory and Rstudio .proj file in your specified location, populated with sub-directories and files from a template - shown here in the "Files" pane in Rstudio after opening the new project:
 
 <center>
-<img src="inst/rstudio/templates/newproj_filestr.png" alt="file structure screenshot" width="250" />
+<img src="inst/rstudio/templates/newproj_filestr.jpg" alt="file structure screenshot" width="250" />
+
 </center>
 Using this template helps to keep consistency across analytic projects, making collaboration and reproducible working easier. Moreover, some of phenotools' reporting functions make use of this structure to find relevant files and combine them for export, so deviating too far from this core structure will restrict the extent to which the package can help you at the other end.
 

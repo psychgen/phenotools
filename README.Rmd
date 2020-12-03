@@ -16,7 +16,7 @@ library(phenotools)
 
 
 
-![Phenotools.](inst/rstudio/templates/phenotools.png){align='right'}
+![Phenotools.](inst/rstudio/templates/phenotools.jpg){align='right'}
 
 &nbsp;
 
@@ -71,7 +71,9 @@ initialise_project(path="C:/Users/p471-lauriejh/newproject",
 This creates a project directory and Rstudio .proj file in your specified location, populated with sub-directories and files from a template - shown here in the "Files" pane in Rstudio after opening the new project:
 
 <center>
-![file structure screenshot](inst/rstudio/templates/newproj_filestr.png){width=250px}
+
+![file structure screenshot](inst/rstudio/templates/newproj_filestr.jpg){width=250px}
+
 </center>
 
 
