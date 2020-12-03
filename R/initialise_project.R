@@ -27,8 +27,8 @@ initialise_project <- function(path,
               to=paste0(path,"/",
                         stringr::str_split(path,"/")[[1]][length(stringr::str_split(path,"/")[[1]])], ".Rproj"))
 
-   message("Project initialised successfully. Open via Rstudio>File>Open project...
-           or open the >yourproject<.Rproj file from Windows Explorer.")
+   message("\nProject initialised successfully. Open via Rstudio>File>Open project...
+or open the >yourproject<.Rproj file from Windows Explorer.")
 }
 
 

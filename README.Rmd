@@ -17,10 +17,18 @@ library(phenotools)
 ```{r, echo=FALSE}
 htmltools::img(src = knitr::image_uri(file.path(getwd(),"inst","rstudio","templates", "phenotools.png")), 
                alt = 'logo', 
-               style = 'position:absolute; top:0; right:0; padding:10px;')
+               style = 'position:absolute; top:0; right:0; padding:5px;')
 ```
+&nbsp;
+&nbsp;
 
 # phenotools
+
+&nbsp; 
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
 
 The goal of this package is to allow researchers to use phenotypic data from MoBa and linked registry sources reproducibly and efficiently. 
 
@@ -40,11 +48,29 @@ install.packages()
 
 ## Overview and project set-up
 
-The package primarily provides functions to assist you at the beginning and end of your analytic workflow; specifically, in the respective areas of data preparation, and analysis documentation and reporting. These are outlined below. However, to make full usage of the phenotools package, it is advisable to begin by using it to set up your analytic project with a pre-defined structure using the `initialise_project` function:
+The package primarily provides functions to assist you at the beginning and end of your analytic workflow; specifically, in the respective areas of data preparation, and analysis documentation and reporting.
+
+![Phenotools in TSD reproducible workflow.](inst/rstudio/templates/phenotools_workflow.jpg)
+
+
+These functions are outlined below. However, to make full usage of the phenotools package, it is advisable to begin by using it to set up your analytic project with a pre-defined structure using the `initialise_project` function:
+
+```{r initialise, echo=T} 
+initialise_project(path="C:/Users/p471-lauriejh/newproject",
+                   template_filepath="N:/data/durable/common/new_project_template/.")
+```
+
+This creates a project directory in your specified location, populated with sub-directories and files from a template. Using this template helps to keep consistency across analytic projects, making collaboration and reproducible working easier. Moreover, some of phenotools' reporting functions make use of this structure to find relevant files and combine them for export, so deviating too far from this core structure will restrict the extent to which the package can help you at the other end.
 
 ## Data preparation with phenotools
 
+The main workhorse of the phenotools package is the `curate_dataset` function. The purpose of this function is to curate an analysis-ready dataset based on the variables, from MoBa and other supported sources, you request. This means that psychometric scales will be coded up for you, and derived variables such as BMI computed and returned along with specific demographic variables and family-level IDs.
 
+The first step is to ascertain what variables are available and what names you need to refer to them by in your request. This is done using the `available_variables` function:
+
+```{available_vs, echo = T}
+available_variables(source = "moba")
+```
 
 
 ## Analysis documentation and reporting with phenotools (in development)
