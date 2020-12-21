@@ -70,28 +70,38 @@ The main workhorse of the phenotools package is the `curate_dataset` function. T
 The first step is to ascertain what variables are available and what names you need to refer to them by in your request. This is done using the `available_variables` function:
 
 ``` r
-available_variables(source = "moba")
+phenovars <- available_variables(source = "moba")
 #> Values from column:var_name are valid inputs for curate_dataset()
-#> # A tibble: 60 x 5
-#>    measure subscale   questionnaire var_name     source
-#>    <chr>   <chr>      <chr>         <chr>        <chr> 
-#>  1 BMI     mother     Q1            bmi_mat_q1   moba  
-#>  2 BMI     father     Q1            bmi_pat_q1   moba  
-#>  3 SCL     anxiety    Q3            scl_anx_q3   moba  
-#>  4 SCL     depression Q3            scl_dep_q3   moba  
-#>  5 SCL     <NA>       Q4_6months    scl_full_6m  moba  
-#>  6 SCL     anxiety    Q4_6months    scl_anx_6m   moba  
-#>  7 SCL     depression Q4_6months    scl_dep_6m   moba  
-#>  8 SCL     <NA>       Q5_18months   scl_full_18m moba  
-#>  9 SCL     anxiety    Q5_18months   scl_anx_18m  moba  
-#> 10 SCL     depression Q5_18months   scl_dep_18m  moba  
-#> # ... with 50 more rows
+
+head(phenovars)
+#> # A tibble: 6 x 5
+#>   measure subscale   questionnaire var_name      source
+#>   <chr>   <chr>      <chr>         <chr>         <chr> 
+#> 1 BMI     <NA>       Q1            bmi_full_m_q1 moba  
+#> 2 BMI     <NA>       Q1            bmi_full_f_q1 moba  
+#> 3 SCL     anxiety    Q3            scl_anx_m_q3  moba  
+#> 4 SCL     depression Q3            scl_dep_m_q3  moba  
+#> 5 SCL     <NA>       Q4_6months    scl_full_m_6m moba  
+#> 6 SCL     anxiety    Q4_6months    scl_anx_m_6m  moba
+tail(phenovars)
+#> # A tibble: 6 x 5
+#>   measure subscale   questionnaire var_name        source
+#>   <chr>   <chr>      <chr>         <chr>           <chr> 
+#> 1 SCL     <NA>       QF            scl_full_f_far  moba  
+#> 2 SCL     anxiety    QF            scl_anx_f_far   moba  
+#> 3 SCL     depression QF            scl_dep_f_far   moba  
+#> 4 SCL     <NA>       Far2          scl_full_f_far2 moba  
+#> 5 SCL     anxiety    Far2          scl_anx_f_far2  moba  
+#> 6 SCL     depression Far2          scl_dep_f_far2  moba
+
+#To see all available variables (or see code further down for searching specific strings):
+#view(phenovars)
 ```
 
 To get a dataset with a variable that you want, you need to quote its var\_name as the input for the `variables_required` option in the `curate_dataset` function:
 
 ``` r
-mydata <- curate_dataset(variables_required="scl_anx_q3",
+mydata <- curate_dataset(variables_required="scl_anx_m_q3",
                          pheno_data_root_dir="N:/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
                          PDB="2306",
                          completion_threshold=0.5,
@@ -106,7 +116,7 @@ mydata <- curate_dataset(variables_required="scl_anx_q3",
 #> 
 #> Processing MoBa scale variables. These are: 
 #> 
-#> scl_anx_q3
+#> scl_anx_m_q3
 #> 
 #> Expect a wait of up to:
 #> 
@@ -122,14 +132,14 @@ mydata <- curate_dataset(variables_required="scl_anx_q3",
 
 head(mydata)
 #> # A tibble: 6 x 6
-#>   preg_id BARN_NR m_id    f_id    birth_yr scl_anx_q3
-#>   <chr>     <dbl> <chr>   <chr>      <dbl>      <dbl>
-#> 1 1             1 M100499 F027449     2005          2
-#> 2 2             1 M080431 F034439     2007          0
-#> 3 3             1 M041879 F010847     2005          1
-#> 4 4             1 M073267 F006456     2003          0
-#> 5 5             1 M021417 <NA>        2000          0
-#> 6 6             1 M018960 F057876     2006         NA
+#>   preg_id BARN_NR m_id    f_id    birth_yr scl_anx_m_q3
+#>   <chr>     <dbl> <chr>   <chr>      <dbl>        <dbl>
+#> 1 1             1 M100499 F027449     2005            2
+#> 2 2             1 M080431 F034439     2007            0
+#> 3 3             1 M041879 F010847     2005            1
+#> 4 4             1 M073267 F006456     2003            0
+#> 5 5             1 M021417 <NA>        2000            0
+#> 6 6             1 M018960 F057876     2006           NA
 ```
 
 Other important inputs here are the root directory of the MoBa phenotypic data (SPSS format) and PDB code for the project you are working in. Both default to the correct values for the p471 TSD project.
@@ -139,7 +149,7 @@ Likely, you will want a dataset with multiple phenotypes; `variables_required` n
 ``` r
 
 ##Not run
-mydata <- curate_dataset(variables_required=c("scl_anx_q3","bmi_pat_q1"))
+mydata <- curate_dataset(variables_required=c("scl_anx_m_q3","bmi_full_f_q1"))
 ```
 
 Alternatively, you can use columns in the dataframe produced by the `available_variables` function to get a list of variables and input that:
@@ -151,22 +161,22 @@ phenovars <- available_variables(source = "moba")
 
 head(phenovars)
 #> # A tibble: 6 x 5
-#>   measure subscale   questionnaire var_name    source
-#>   <chr>   <chr>      <chr>         <chr>       <chr> 
-#> 1 BMI     mother     Q1            bmi_mat_q1  moba  
-#> 2 BMI     father     Q1            bmi_pat_q1  moba  
-#> 3 SCL     anxiety    Q3            scl_anx_q3  moba  
-#> 4 SCL     depression Q3            scl_dep_q3  moba  
-#> 5 SCL     <NA>       Q4_6months    scl_full_6m moba  
-#> 6 SCL     anxiety    Q4_6months    scl_anx_6m  moba
+#>   measure subscale   questionnaire var_name      source
+#>   <chr>   <chr>      <chr>         <chr>         <chr> 
+#> 1 BMI     <NA>       Q1            bmi_full_m_q1 moba  
+#> 2 BMI     <NA>       Q1            bmi_full_f_q1 moba  
+#> 3 SCL     anxiety    Q3            scl_anx_m_q3  moba  
+#> 4 SCL     depression Q3            scl_dep_m_q3  moba  
+#> 5 SCL     <NA>       Q4_6months    scl_full_m_6m moba  
+#> 6 SCL     anxiety    Q4_6months    scl_anx_m_6m  moba
 
 myphenovars <- dplyr::filter(phenovars,
                             stringr::str_detect(measure,"SCL"),
                             stringr::str_detect(subscale,"depression"))
 
 myphenovars$var_name
-#> [1] "scl_dep_q3"   "scl_dep_6m"   "scl_dep_18m"  "scl_dep_5yr" 
-#> [5] "scl_dep_3yr"  "scl_dep_8yr"  "scl_dep_far"  "scl_dep_far2"
+#> [1] "scl_dep_m_q3"   "scl_dep_m_6m"   "scl_dep_m_18m"  "scl_dep_m_5yr" 
+#> [5] "scl_dep_m_3yr"  "scl_dep_m_8yr"  "scl_dep_f_far"  "scl_dep_f_far2"
 ```
 
 ``` r
@@ -178,7 +188,7 @@ In the above cases `curate_dataset` returns a data.frame with the processed scal
 
 ``` r
 
-mydata <- curate_dataset(variables_required=c("scl_anx_q3","bmi_pat_q1"),
+mydata <- curate_dataset(variables_required=c("scl_anx_m_q3","bmi_full_f_q1"),
                          return_items = T)
 #> Checking inputs...
 #> 
@@ -190,7 +200,7 @@ mydata <- curate_dataset(variables_required=c("scl_anx_q3","bmi_pat_q1"),
 #> 
 #> Processing MoBa scale variables. These are: 
 #> 
-#> scl_anx_q3
+#> scl_anx_m_q3
 #> 
 #> Expect a wait of up to:
 #> 
@@ -202,7 +212,7 @@ mydata <- curate_dataset(variables_required=c("scl_anx_q3","bmi_pat_q1"),
 #> 
 #> Processing non-scale MoBa vars. These are: 
 #> 
-#> bmi_pat_q1
+#> bmi_full_f_q1
 #> Processing BMI variable 1 of 1
 #> 
 #> Processing of BMI variables is complete.
@@ -220,55 +230,56 @@ mydata <- curate_dataset(variables_required=c("scl_anx_q3","bmi_pat_q1"),
 str(mydata)
 #> List of 2
 #>  $ scales:Classes 'tbl_df', 'tbl' and 'data.frame':  114143 obs. of  9 variables:
-#>   ..$ preg_id        : chr [1:114143] "1" "2" "3" "4" ...
-#>   ..$ BARN_NR        : num [1:114143] 1 1 1 1 1 1 1 1 1 1 ...
+#>   ..$ preg_id           : chr [1:114143] "1" "2" "3" "4" ...
+#>   ..$ BARN_NR           : num [1:114143] 1 1 1 1 1 1 1 1 1 1 ...
 #>   .. ..- attr(*, "format.spss")= chr "F12.0"
 #>   .. ..- attr(*, "display_width")= int 12
-#>   ..$ m_id           : chr [1:114143] "M100499" "M080431" "M041879" "M073267" ...
-#>   ..$ f_id           : chr [1:114143] "F027449" "F034439" "F010847" "F006456" ...
-#>   ..$ birth_yr       : num [1:114143] 2005 2007 2005 2003 2000 ...
+#>   ..$ m_id              : chr [1:114143] "M100499" "M080431" "M041879" "M073267" ...
+#>   ..$ f_id              : chr [1:114143] "F027449" "F034439" "F010847" "F006456" ...
+#>   ..$ birth_yr          : num [1:114143] 2005 2007 2005 2003 2000 ...
 #>   .. ..- attr(*, "label")= chr "FAAR"
 #>   .. ..- attr(*, "format.spss")= chr "F5.0"
-#>   ..$ scl_anx_q3     : num [1:114143] 2 0 1 0 0 NA 0 2 0 1 ...
-#>   ..$ pat_q1_bmi     : num [1:114143] 23.4 26.3 23.4 32.8 26.6 ...
-#>   ..$ pat_q1_heightcm: num [1:114143] 179 170 173 178 194 NA 173 185 176 185 ...
-#>   ..$ pat_q1_weightkg: num [1:114143] 75 76 70 104 100 NA 65 NA 80 90 ...
+#>   ..$ scl_anx_m_q3      : num [1:114143] 2 0 1 0 0 NA 0 2 0 1 ...
+#>   ..$ full_f_q1_bmi     : num [1:114143] 23.4 26.3 23.4 32.8 26.6 ...
+#>   ..$ full_f_q1_heightcm: num [1:114143] 179 170 173 178 194 NA 173 185 176 185 ...
+#>   ..$ full_f_q1_weightkg: num [1:114143] 75 76 70 104 100 NA 65 NA 80 90 ...
 #>  $ items :Classes 'tbl_df', 'tbl' and 'data.frame':  114143 obs. of  13 variables:
-#>   ..$ preg_id                   : chr [1:114143] "1" "2" "3" "4" ...
-#>   ..$ BARN_NR                   : num [1:114143] 1 1 1 1 1 1 1 1 1 1 ...
+#>   ..$ preg_id                     : chr [1:114143] "1" "2" "3" "4" ...
+#>   ..$ BARN_NR                     : num [1:114143] 1 1 1 1 1 1 1 1 1 1 ...
 #>   .. ..- attr(*, "format.spss")= chr "F12.0"
 #>   .. ..- attr(*, "display_width")= int 12
-#>   ..$ m_id                      : chr [1:114143] "M100499" "M080431" "M041879" "M073267" ...
-#>   ..$ f_id                      : chr [1:114143] "F027449" "F034439" "F010847" "F006456" ...
-#>   ..$ birth_yr                  : num [1:114143] 2005 2007 2005 2003 2000 ...
+#>   ..$ m_id                        : chr [1:114143] "M100499" "M080431" "M041879" "M073267" ...
+#>   ..$ f_id                        : chr [1:114143] "F027449" "F034439" "F010847" "F006456" ...
+#>   ..$ birth_yr                    : num [1:114143] 2005 2007 2005 2003 2000 ...
 #>   .. ..- attr(*, "label")= chr "FAAR"
 #>   .. ..- attr(*, "format.spss")= chr "F5.0"
-#>   ..$ scl_anx_q3_i1_CC1202_raw  : chr [1:114143] "Not bothered" "Not bothered" "Not bothered" "Not bothered" ...
-#>   ..$ scl_anx_q3_i2_CC1203_raw  : chr [1:114143] "A little bothered" "Not bothered" "Not bothered" "Not bothered" ...
-#>   ..$ scl_anx_q3_i3_CC1208_raw  : chr [1:114143] "A little bothered" "Not bothered" "A little bothered" "Not bothered" ...
-#>   ..$ scl_anx_q3_i4_CC1209_raw  : chr [1:114143] "Not bothered" "Not bothered" "Not bothered" "Not bothered" ...
-#>   ..$ scl_anx_q3_i1_CC1202_coded: num [1:114143] 0 0 0 0 0 NA 0 0 0 1 ...
-#>   ..$ scl_anx_q3_i2_CC1203_coded: num [1:114143] 1 0 0 0 0 NA 0 1 0 0 ...
-#>   ..$ scl_anx_q3_i3_CC1208_coded: num [1:114143] 1 0 1 0 NA NA 0 1 0 0 ...
-#>   ..$ scl_anx_q3_i4_CC1209_coded: num [1:114143] 0 0 0 0 NA NA 0 0 0 0 ...
+#>   ..$ scl_anx_m_q3_i1_CC1202_raw  : chr [1:114143] "Not bothered" "Not bothered" "Not bothered" "Not bothered" ...
+#>   ..$ scl_anx_m_q3_i2_CC1203_raw  : chr [1:114143] "A little bothered" "Not bothered" "Not bothered" "Not bothered" ...
+#>   ..$ scl_anx_m_q3_i3_CC1208_raw  : chr [1:114143] "A little bothered" "Not bothered" "A little bothered" "Not bothered" ...
+#>   ..$ scl_anx_m_q3_i4_CC1209_raw  : chr [1:114143] "Not bothered" "Not bothered" "Not bothered" "Not bothered" ...
+#>   ..$ scl_anx_m_q3_i1_CC1202_coded: num [1:114143] 0 0 0 0 0 NA 0 0 0 1 ...
+#>   ..$ scl_anx_m_q3_i2_CC1203_coded: num [1:114143] 1 0 0 0 0 NA 0 1 0 0 ...
+#>   ..$ scl_anx_m_q3_i3_CC1208_coded: num [1:114143] 1 0 1 0 NA NA 0 1 0 0 ...
+#>   ..$ scl_anx_m_q3_i4_CC1209_coded: num [1:114143] 0 0 0 0 NA NA 0 0 0 0 ...
 
 myscaledata <- mydata[["scales"]]
 myitemdata <- mydata[["items"]]
 
 head(myscaledata)
 #> # A tibble: 6 x 9
-#>   preg_id BARN_NR m_id  f_id  birth_yr scl_anx_q3 pat_q1_bmi
-#>   <chr>     <dbl> <chr> <chr>    <dbl>      <dbl>      <dbl>
-#> 1 1             1 M100~ F027~     2005          2       23.4
-#> 2 2             1 M080~ F034~     2007          0       26.3
-#> 3 3             1 M041~ F010~     2005          1       23.4
-#> 4 4             1 M073~ F006~     2003          0       32.8
-#> 5 5             1 M021~ <NA>      2000          0       26.6
-#> 6 6             1 M018~ F057~     2006         NA       NA  
-#> # ... with 2 more variables: pat_q1_heightcm <dbl>, pat_q1_weightkg <dbl>
+#>   preg_id BARN_NR m_id  f_id  birth_yr scl_anx_m_q3 full_f_q1_bmi
+#>   <chr>     <dbl> <chr> <chr>    <dbl>        <dbl>         <dbl>
+#> 1 1             1 M100~ F027~     2005            2          23.4
+#> 2 2             1 M080~ F034~     2007            0          26.3
+#> 3 3             1 M041~ F010~     2005            1          23.4
+#> 4 4             1 M073~ F006~     2003            0          32.8
+#> 5 5             1 M021~ <NA>      2000            0          26.6
+#> 6 6             1 M018~ F057~     2006           NA          NA  
+#> # ... with 2 more variables: full_f_q1_heightcm <dbl>,
+#> #   full_f_q1_weightkg <dbl>
 head(myitemdata)
 #> # A tibble: 6 x 13
-#>   preg_id BARN_NR m_id  f_id  birth_yr scl_anx_q3_i1_C~ scl_anx_q3_i2_C~
+#>   preg_id BARN_NR m_id  f_id  birth_yr scl_anx_m_q3_i1~ scl_anx_m_q3_i2~
 #>   <chr>     <dbl> <chr> <chr>    <dbl> <chr>            <chr>           
 #> 1 1             1 M100~ F027~     2005 Not bothered     A little bother~
 #> 2 2             1 M080~ F034~     2007 Not bothered     Not bothered    
@@ -276,10 +287,10 @@ head(myitemdata)
 #> 4 4             1 M073~ F006~     2003 Not bothered     Not bothered    
 #> 5 5             1 M021~ <NA>      2000 Not bothered     Not bothered    
 #> 6 6             1 M018~ F057~     2006 <NA>             <NA>            
-#> # ... with 6 more variables: scl_anx_q3_i3_CC1208_raw <chr>,
-#> #   scl_anx_q3_i4_CC1209_raw <chr>, scl_anx_q3_i1_CC1202_coded <dbl>,
-#> #   scl_anx_q3_i2_CC1203_coded <dbl>, scl_anx_q3_i3_CC1208_coded <dbl>,
-#> #   scl_anx_q3_i4_CC1209_coded <dbl>
+#> # ... with 6 more variables: scl_anx_m_q3_i3_CC1208_raw <chr>,
+#> #   scl_anx_m_q3_i4_CC1209_raw <chr>, scl_anx_m_q3_i1_CC1202_coded <dbl>,
+#> #   scl_anx_m_q3_i2_CC1203_coded <dbl>,
+#> #   scl_anx_m_q3_i3_CC1208_coded <dbl>, scl_anx_m_q3_i4_CC1209_coded <dbl>
 ```
 
 See the help pages for `curate_dataset` for more options.

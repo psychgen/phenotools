@@ -91,14 +91,20 @@ The main workhorse of the phenotools package is the `curate_dataset` function. T
 The first step is to ascertain what variables are available and what names you need to refer to them by in your request. This is done using the `available_variables` function:
 
 ```{r available_vs, echo = T}
-available_variables(source = "moba")
+phenovars <- available_variables(source = "moba")
+
+head(phenovars)
+tail(phenovars)
+
+#To see all available variables (or see code further down for searching specific strings):
+#view(phenovars)
 ```
 
 
 To get a dataset with a variable that you want, you need to quote its var_name as the input for the `variables_required` option in the `curate_dataset` function:
 
 ```{r curate1, echo = T}
-mydata <- curate_dataset(variables_required="scl_anx_q3",
+mydata <- curate_dataset(variables_required="scl_anx_m_q3",
                          pheno_data_root_dir="N:/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
                          PDB="2306",
                          completion_threshold=0.5,
@@ -117,7 +123,7 @@ Likely, you will want a dataset with multiple phenotypes; `variables_required` n
 ```{r curate2, echo = T, eval= F}
 
 ##Not run
-mydata <- curate_dataset(variables_required=c("scl_anx_q3","bmi_pat_q1"))
+mydata <- curate_dataset(variables_required=c("scl_anx_m_q3","bmi_full_f_q1"))
 ```
 
 
@@ -145,7 +151,7 @@ In the above cases `curate_dataset` returns a data.frame with the processed scal
 
 ```{r curate3, echo = T}
 
-mydata <- curate_dataset(variables_required=c("scl_anx_q3","bmi_pat_q1"),
+mydata <- curate_dataset(variables_required=c("scl_anx_m_q3","bmi_full_f_q1"),
                          return_items = T)
 
 str(mydata)

@@ -4,7 +4,7 @@ library(usethis)
 
 # Read in from spreadsheet and filter only complete entries
 
-moba <- read_excel("N:/data/durable/common/moba_pheno_pkg/data/moba_pheno_metadata.xlsx")%>%
+moba <- read_excel("//tsd-evs/p471/data/durable/common/phenotools_pkg/data/moba_pheno_metadata_safe.xlsx")%>%
   filter(complete=="y") %>%
   mutate_all( list(~str_remove_all(.,"\""))) %>%
   select(-coded_by)

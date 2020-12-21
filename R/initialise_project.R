@@ -13,7 +13,7 @@
 #' @importFrom dplyr "%>%"
 
 initialise_project <- function(path,
-                               template_filepath="N:/data/durable/common/new_project_template/."){
+                               template_filepath="//tsd-evs/p471/data/durable/common/new_project_template/."){
   message("Initialising...")
   # Create the project path given the name chosen by the user:
   dir.create(path, recursive = TRUE, showWarnings = FALSE)

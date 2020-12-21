@@ -5,7 +5,7 @@
 \title{Curate dataset}
 \usage{
 curate_dataset(variables_required = "none_specified",
-  pheno_data_root_dir = "N:/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+  pheno_data_root_dir = "//tsd-evs/p471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
   PDB = "2306", completion_threshold = 0.5, return_items = FALSE,
   consistent_items = FALSE, transformations = NULL)
 }

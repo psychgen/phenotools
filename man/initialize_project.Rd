@@ -5,7 +5,7 @@
 \title{Initialize project}
 \usage{
 initialize_project(path,
-  template_filepath = "N:/data/durable/common/new_project_template/.")
+  template_filepath = "//tsd-evs/p471/data/durable/common/new_project_template/.")
 }
 \arguments{
 \item{path}{Where is the top-level directory for the new
