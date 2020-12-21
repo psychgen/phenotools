@@ -50,6 +50,15 @@ for your requested scales..." ))
 
   for(v in unique(moba_scale_vars_long$var_name)){
 
+    responses_long <- moba_scale_vars %>%
+      dplyr::filter(var_name == v) %>%
+      dplyr::select(matches("response")) %>%
+      tidyr::gather(response,val) %>%
+      tidyr::drop_na(val) %>%
+      dplyr::mutate(pos_numval = dplyr::row_number()-1,
+                    neg_numval = rev(dplyr::row_number()-1)) %>%
+      dplyr::select(-response)
+
     moba_item_data_temp <-
       suppressMessages(
         suppressWarnings(
@@ -57,21 +66,8 @@ for your requested scales..." ))
             dplyr::select(preg_id,m_id,f_id,BARN_NR,birth_yr,unlist(strsplit(paste0(dplyr::filter(moba_scale_vars_long,var_name == v)$item_name, collapse=","),","))) %>%
             dplyr::mutate_at(dplyr::vars(-preg_id:-birth_yr), list(~haven::as_factor(.) )) %>%
             tidyr::gather(item_name, val, -preg_id:-birth_yr) %>%
-            dplyr::left_join(moba_scale_vars_long %>%
-                               dplyr::select(item_name, var_name, tidyselect::matches("response") ) %>%
-                               dplyr::filter(var_name==v)))) %>%
-      dplyr::mutate(numval = ifelse(item_name %in% moba_rvrsd_items,
-                                    dplyr::case_when(val == response0 ~ 4,
-                                                     val == response1 ~ 3,
-                                                     val == response2 ~ 2,
-                                                     val == response3 ~ 1,
-                                                     val == response4 ~ 0),
-                                    dplyr::case_when(val == response0 ~ 0,
-                                                     val == response1 ~ 1,
-                                                     val == response2 ~ 2,
-                                                     val == response3 ~ 3,
-                                                     val == response4 ~ 4))) ### Should pre-emptively add in more response levels
-
+            dplyr::left_join(responses_long))) %>%
+      dplyr::mutate(numval = ifelse(item_name %in% moba_rvrsd_items, neg_numval,pos_numval))
 
 
     moba_scale_data_temp <- moba_item_data_temp %>%
