@@ -52,7 +52,7 @@ for your requested scales..." ))
 
     responses_long <- moba_scale_vars %>%
       dplyr::filter(var_name == v) %>%
-      dplyr::select(matches("response")) %>%
+      dplyr::select(tidyselect::matches("response")) %>%
       tidyr::gather(response,val) %>%
       tidyr::drop_na(val) %>%
       dplyr::mutate(pos_numval = dplyr::row_number()-1,
@@ -66,7 +66,10 @@ for your requested scales..." ))
             dplyr::select(preg_id,m_id,f_id,BARN_NR,birth_yr,unlist(strsplit(paste0(dplyr::filter(moba_scale_vars_long,var_name == v)$item_name, collapse=","),","))) %>%
             dplyr::mutate_at(dplyr::vars(-preg_id:-birth_yr), list(~haven::as_factor(.) )) %>%
             tidyr::gather(item_name, val, -preg_id:-birth_yr) %>%
-            dplyr::left_join(responses_long))) %>%
+            dplyr::left_join(responses_long) %>%
+            dplyr::left_join(moba_scale_vars_long %>%
+                               dplyr::select(item_name,var_name)%>%
+                               dplyr::filter(var_name == v)))) %>%
       dplyr::mutate(numval = ifelse(item_name %in% moba_rvrsd_items, neg_numval,pos_numval))
 
 
