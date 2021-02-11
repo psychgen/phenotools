@@ -4,10 +4,17 @@
 \alias{curate_dataset}
 \title{Curate dataset}
 \usage{
-curate_dataset(variables_required = "none_specified",
-  pheno_data_root_dir = "//tsd-evs/p471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
-  PDB = "2306", completion_threshold = 0.5, return_items = FALSE,
-  consistent_items = FALSE, transformations = NULL)
+curate_dataset(
+  variables_required = "none_specified",
+ 
+    pheno_data_root_dir = "//tsd-evs/p471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+  PDB = "2306",
+  completion_threshold = 0.5,
+  return_items = FALSE,
+  consistent_items = FALSE,
+  transformations = NULL,
+  log = FALSE
+)
 }
 \arguments{
 \item{variables_required}{What variables are required? See
@@ -26,6 +33,8 @@ to be present for a scale score to be computed?}
 for variables that are measured longitudinally?}
 
 \item{transformations}{Not yet implemented}
+
+\item{log}{filepath for code_preparation log}
 }
 \description{
 \code{curate_dataset} is the main workhorse of the data preparation

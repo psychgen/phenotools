@@ -4,9 +4,15 @@
 \alias{curate_moba_scales}
 \title{Curate moba scales}
 \usage{
-curate_moba_scales(moba_scale_vars, moba_scale_vars_long, moba_data,
-  completion_threshold = 0.5, return_items = FALSE,
-  consistent_items = FALSE, transformations = NULL)
+curate_moba_scales(
+  moba_scale_vars,
+  moba_scale_vars_long,
+  moba_data,
+  completion_threshold = 0.5,
+  return_items = FALSE,
+  consistent_items = FALSE,
+  transformations = NULL
+)
 }
 \arguments{
 \item{moba_scale_vars}{Df created in \code{curate_dataset}}

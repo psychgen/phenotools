@@ -4,12 +4,14 @@
 \name{moba}
 \alias{moba}
 \title{Metadata for moba variables used in dataset curation}
-\format{A data frame
+\format{
+A data frame
 \describe{
   \item{var_name}{variable level idenitfier used in
   phenotools package functions}
   ...
-}}
+}
+}
 \source{
 make_raw_pkg_data.R in data-raw
 }
