@@ -17,7 +17,7 @@ Installation
 You can install the latest working version as follows...
 
 ``` r
-install.packages("//tsd-evs/p471/data/durable/common/software/phenotools_0.1.0.zip", 
+install.packages("//tsd-evs/p471/data/durable/common/software/phenotools_0.1.2.zip", 
                  repos=NULL,
                  type = "binary")
 ```
