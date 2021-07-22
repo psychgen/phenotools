@@ -8,44 +8,228 @@
 #'
 #' @param variables_required What variables are required? See
 #' \code{available_variables} for a valid inputs
-#' @param pheno_data_root_dir Where is the raw MoBa phenotypic data?
+#' @param moba_data_root_dir Where is the raw MoBa phenotypic data?
 #' @param PDB What is the PDB code for your TSD project?
+#' @param moba_data_version Which version of MoBa phenotypic data are you using?
+#' Defaults to 12; 11 is also a viable option for some scales
 #' @param completion_threshold What proportion of scale items need
 #' to be present for a scale score to be computed?
 #' @param return_items Output item-level data?
 #' @param consistent_items Only use wave-to-wave consistent items
 #' for variables that are measured longitudinally?
 #' @param transformations Not yet implemented
+#' @param log filepath for code_preparation log
+#' @param out_format should output be a "list" or "merged_df"; defaults to "list"
+#' @param override_filenames questionnaire filenames are built by combining your
+#' inputs on PDB, moba_data_version, and the standard codes for each questionnaire
+#' (see unique(available_variables("moba")$questionnaire) + "SV_INFO" and "MBRN")
+#' to give the format: "PDB>PDB<_>code<_v>moba_data_version<.sav"). If you need to
+#' override this because the filenames have been altered in your TSD project, add
+#'  a vector of strings here, e.g., 'override_filenames = c("Q1 = new_Q1_filename.sav")
+#' @param ... arguments to pass to internal functions, see ?curate_moba_scales
+#' and ?curate_npr
 #' @export
 #' @importFrom dplyr "%>%"
 
 
-curate_dataset <- function(variables_required="none_specified",
-                           pheno_data_root_dir="//tsd-evs/p471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+curate_dataset <- function(variables_required,
+                           moba_data_root_dir="//tsd-evs/p471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
                            PDB="2306",
+                           moba_data_version = 12,
                            completion_threshold=0.5,
                            return_items=FALSE,
                            consistent_items=FALSE,
-                           transformations=NULL){
+                           transformations=NULL,
+                           log=NULL,
+                           out_format = "list",
+                           override_filenames = NULL,
+                           ...){
+
+  if(!is.null(log)){
+    #Check for logr
+    if(! "logr" %in% installed.packages()[,"Package"]){
+      stop("\nThe logr package is required to use phenotools' logging functionality.
+Either install it or re-run with log=NULL.")
+    }
+
+    suppressMessages <- function(x){x}
+   # suppressWarnings <- function(x){x}
+
+    # Open log
+    logr::log_open(log, autolog = TRUE, show_notes = TRUE)
+
+    # Print log header
+    logr::log_print("Dataset Curation Log: data preparation using the phenotools package", console=FALSE)
+
+
+  }
 
   message("Checking inputs...")
+  #######################
+  ##Warn if MoBa version is not 12
+  if(moba_data_version!=12){
+    warning("MoBa variables have been curated and QCd using v12 data. Coding differences in different versions may mean that some variables are computed incorrectly. It is recommended that you use phenotools with v12 MoBa data. If you really do need to use alternative versions, check your variables carefully, using return_items=TRUE to get raw and coded items for all scales, and checking that these appear to correspond correctly.")
+  }
 
-  ##Error if invalid variable is requested
-  if (any(variables_required %in%c("none_specified")) )
-    stop(paste0("No variable(s) selected.\n\nFor a list of valid variable names run avaliable_variables()"))
-  ##Error if invalid variable is requested
-  if (length(variables_required[(!variables_required %in% suppressMessages(available_variables()$var_name))])>=1 )
-    stop(paste0("Invalid variable(s) selected. Invalid variables:\n\n",
-                paste0(variables_required[(!variables_required %in% suppressMessages(available_variables()$var_name))], collapse="\n"),
-                "\n\nFor a list of valid variable names run avaliable_variables()"))
+  ##Error no variables requested
+  if (!exists("variables_required") ){
+    stop(paste0("No variable(s) specified in 'variables_required'.\n\nFor a list of valid variable names run avaliable_variables()"))
+  }
 
-  reqd_vars <- suppressMessages(available_variables(source = c("moba","npr","kuhr"))) %>%
-    dplyr::filter(var_name %in% variables_required)
+  ## Function to find MoBa items
 
+  moba_item_finder <- function(var){
+    res<- lapply(moba_varnames, function(ch) grep(paste0("\\b",var,"\\b"), ch))
+    res2 <- sapply(res, function(x) length(x) > 0)
+    if(!any(res2)==TRUE){
+      return(NA)
+    }else{
+      names(which(res2))
+    }
+  }
+
+  ## If variables_required is not a named list, can only work with MoBa variables
+
+  ## Process if not list
+  if(!is.list(variables_required)){
+
+        ##Pull out any "new" variables
+    if (length(variables_required[(!variables_required %in% suppressMessages(available_variables("moba")$var_name))])>=1 ){
+
+      new_vars <- variables_required[(!variables_required %in% suppressMessages(available_variables("moba")$var_name))]
+      moba_new_vars <- sapply(new_vars,moba_item_finder) %>%
+        tibble::enframe() %>%
+        `colnames<-`(c("var_name", "questionnaire")) %>%
+        dplyr::mutate(measure = ifelse(!is.na(questionnaire),"single_item",NA),
+                      subscale = rep(NA,length(new_vars)),
+                      source = ifelse(!is.na(questionnaire),"moba",NA))
+
+      other_vars <- c(moba_new_vars %>%
+                        dplyr::filter(is.na(source)) %>%
+                        .$var_name,
+                      variables_required[(variables_required %in% suppressMessages(available_variables(c("npr","kuhr"))$var_name))] ) %>%
+        unique()
+
+      if(length(other_vars)>0){
+        stop(paste0("The following variables cannot be found within MoBa data: ", paste0(other_vars,collapse=","), ".
+
+If these come from other sources, please convert your input for the variables_required argument into a named
+list and re-run (see vignette(\"phenotools\") for details).
+
+If you think this variable should be available within MoBa data, please contact lauriejhannigan@gmail.com.
+For a list of valid pre-processed variable names run avaliable_variables(source = \"moba\"), or check the MoBa wiki for valid item codes."))
+
+      }
+
+    }
+
+    if(exists("moba_new_vars")){
+      reqd_vars <- suppressMessages(available_variables(source = c("moba"))) %>%
+        dplyr::filter(var_name %in% variables_required) %>%
+        dplyr::bind_rows(suppressMessages(available_variables()) %>%
+                           dplyr::filter(is.null(var_name)) %>%
+                           dplyr::bind_rows(moba_new_vars))
+    }else {
+      reqd_vars <- suppressMessages(available_variables(source = c("moba"))) %>%
+        dplyr::filter(var_name %in% variables_required)
+    }
+
+  }else{
+  ## Process if list
+
+    #check that list elements are named
+    if(is.null(names(variables_required))){
+      stop("List elements in variables_required must be named.
+
+If you are only curating based on MoBa variables, you can re-run with the input for
+variables_required as a vector, without names. Otherwise, name your list elements
+according to the data source from which the variables come (see vignette(\"phenotools\") for details).")
+    }
+    #check that names are recognizable
+    if(any(!names(variables_required) %in% suppressMessages(unique(available_variables()$source)) )){
+      stop(paste0("List elements in variables_required must be named according to source.
+
+Run unique(available_variables()$source) to see how to specify source names.
+
+Unrecognised source names: ", names(variables_required)[!names(variables_required) %in% suppressMessages(unique(available_variables()$source))]) )
+    }
+
+    #unlist the inputs
+    variables_required <- unlist(variables_required) %>%
+      as.data.frame() %>%
+      tibble::rownames_to_column() %>%
+      `colnames<-`(c("source","var_name")) %>%
+      dplyr::mutate(source=stringr::str_remove_all(source, "[:digit:]"))
+
+    #process new variables if they exist
+    if (length(variables_required$var_name[(!variables_required$var_name %in% suppressMessages(available_variables()$var_name))])>=1 ){
+
+      new_vars <- variables_required %>%  dplyr::filter(!var_name %in% suppressMessages(available_variables()$var_name))
+      variables_required <-  variables_required %>%  dplyr::filter(var_name %in% suppressMessages(available_variables()$var_name))
+      new_vars_processed <- suppressMessages(available_variables() %>% dplyr::filter(is.null(var_name)))
+
+           # npr/kuhr code combinations
+      if(any(stringr::str_detect(new_vars$var_name,"="))){
+        code_combo_new_vars <- dplyr::tibble(measure = rep("new",length(new_vars$var_name[stringr::str_detect(new_vars$var_name,"=")])),
+                                      subscale = rep(NA,length(new_vars$var_name[stringr::str_detect(new_vars$var_name,"=")])),
+                                      questionnaire = rep(NA,length(new_vars$var_name[stringr::str_detect(new_vars$var_name,"=")])),
+                                      var_name = new_vars$var_name[stringr::str_detect(new_vars$var_name,"=")],
+                                      source = new_vars %>% dplyr:: filter(stringr::str_detect(new_vars$var_name,"=")) %>% .$source)
+        new_vars <- new_vars %>%  dplyr::filter(!stringr::str_detect(var_name,"="))
+        new_vars_processed <- new_vars_processed %>%
+          dplyr::bind_rows(code_combo_new_vars)
+      }
+
+      if(any(new_vars$source != "moba")){
+        stop(paste0("Could not find variable(s): ", new_vars %>% dplyr::filter(source!="moba") %>% .$var_name, ", specified as coming from
+source(s):",new_vars %>% dplyr::filter(source!="moba") %>% .$source,"; check your inputs and refer to available_variables()."  ))
+      }
+
+      #MoBa specific item codes
+      if(length(new_vars$var_name)>0){
+
+         moba_new_vars <- sapply(new_vars$var_name,moba_item_finder) %>%
+          tibble::enframe() %>%
+          `colnames<-`(c("var_name", "questionnaire")) %>%
+          dplyr::mutate(measure = ifelse(!is.na(questionnaire),"single_item",NA),
+                        subscale = rep(NA,length(new_vars$var_name)),
+                        source = ifelse(!is.na(questionnaire),"moba",NA))
+        new_vars_processed <- new_vars_processed %>%
+          dplyr::bind_rows(moba_new_vars)
+      }
+
+      #Combine new_vars objects
+
+      if(any(is.na(new_vars_processed$source))){
+        stop(paste0("Cannot find a source for variable(s): ", new_vars_processed %>% dplyr::filter(is.na(source)) %>% .$var_name, "
+Did you mistype a variable name? If you think this variable should be available, please contact lauriejhannigan@gmail.com.
+For a list of valid pre-processed variable names run avaliable_variables(), or check the MoBa wiki for valid item codes.") )
+      }
+
+
+    }
+
+
+    #make reqd_vars (with new_vars_processed if exists)
+    if(exists("new_vars_processed")){
+      reqd_vars <- suppressMessages(available_variables(source = c("moba","npr","kuhr"))) %>%
+        dplyr::filter(var_name %in% variables_required$var_name) %>%
+        dplyr::bind_rows(new_vars_processed)
+    }else {
+      reqd_vars <- suppressMessages(available_variables(source = c("moba","npr","kuhr"))) %>%
+        dplyr::filter(var_name %in% variables_required$var_name)
+    }
+
+
+  }
+
+  # Get sources
   sources <- reqd_vars %>%
     dplyr::select(source) %>% dplyr::distinct()
 
 
+  all_data_combined <- list()
+  #############
   #MOBA
   ###################################################################################
   if(any(sources$source == "moba")){
@@ -56,8 +240,10 @@ curate_dataset <- function(variables_required="none_specified",
       suppressMessages(
         suppressWarnings(
           reqd_vars %>%
-          dplyr::filter(source =="moba") %>%
-            dplyr::left_join(moba)))
+            dplyr::filter(source =="moba") %>%
+            dplyr::left_join(moba) %>%
+            dplyr::mutate(items=ifelse(measure=="single_item",var_name,items),
+                          helper=ifelse(measure=="single_item","single_item",helper))))
 
     ##W2W consistent items only?
     if(consistent_items == TRUE){
@@ -65,25 +251,69 @@ curate_dataset <- function(variables_required="none_specified",
         dplyr::mutate(items=ifelse(is.na(consistent),items,consistent ))
     }
 
-    ##Create data.frame of PREG_IDs to aggregate created variables
-    moba_data <-
-      haven::read_spss(paste0(pheno_data_root_dir,"PDB",PDB,"_MBRN_541_v12.sav")) %>%
-      dplyr::select(preg_id = dplyr::matches("PREG_ID"),BARN_NR) %>%
+    ##Make up lookup table of filepaths, comprising defaults and any overrides
+
+    make_moba_filepath <- function(x, name=NULL){
+      if(is.null(name)){
+      return(paste0(moba_data_root_dir,"PDB",PDB,"_",x,"_v",moba_data_version,".sav"))
+      }else{
+        return(paste0(moba_data_root_dir,name))
+      }
+    }
+
+    moba_filepaths <- dplyr::tibble(MBRN = make_moba_filepath("MBRN_541"),
+                                   SV_INFO = make_moba_filepath("SV_INFO"),
+                                   Q1 = make_moba_filepath("Q1"),
+                                   Q3 = make_moba_filepath("Q3"),
+                                   Q4_6months = make_moba_filepath("Q4_6months"),
+                                   Q5_18months = make_moba_filepath("Q5_18months"),
+                                   Q5yrs = make_moba_filepath("Q5yrs"),
+                                   Q6_3yrs = make_moba_filepath("Q6_3yrs"),
+                                   Q7yrs = make_moba_filepath("Q7yrs"),
+                                   Q8yrs = make_moba_filepath("Q8yrs"),
+                                   QF = make_moba_filepath("QF"),
+                                   Far2 = make_moba_filepath("Far2")) %>%
+      t() %>% as.data.frame %>%
+      tibble::rownames_to_column() %>%
+      `colnames<-`(c("questionnaire","filepath"))
+
+    if(any(stringr::str_detect(override_filenames, "="))){
+
+     filepaths_new <- override_filenames %>%
+        dplyr::as_tibble() %>%
+        tidyr::separate(value, into = c("questionnaire","name"), sep="=") %>%
+        dplyr::mutate_all(stringr::str_trim) %>%
+        dplyr::mutate(filepath = make_moba_filepath(questionnaire,name))
+
+     if(any(!stringr::str_detect(filepaths_new$filepath,".sav"))){
+       stop("Only SPSS files supported as inputs at present; you have either specified a non-SPSS file
+in override_filenames or else forgotten the '.sav' file extension.")
+     }
+
+
+     moba_filepaths$filepath[match(filepaths_new$questionnaire, moba_filepaths$questionnaire)] <- filepaths_new$filepath
+
+      }
+
+
+   ##Create data.frame of PREG_IDs to aggregate created variables
+    mbrn <-
+      haven::read_spss(moba_filepaths %>% dplyr::filter(questionnaire=="MBRN") %>% .$filepath ) %>%
+      dplyr::select(preg_id = dplyr::matches("PREG_ID"),BARN_NR,birth_yr =FAAR) %>%
       dplyr::mutate(preg_id = as.integer(preg_id))
     ##Add M_ID and F_ID variables from SV info
     sv_info <-
-      haven::read_spss(paste0(pheno_data_root_dir,"PDB",PDB,"_SV_INFO_v12.sav"))%>%
+      haven::read_spss(moba_filepaths %>% dplyr::filter(questionnaire=="SV_INFO") %>% .$filepath )%>%
       dplyr::select(preg_id = dplyr::matches("PREG_ID"),
                     m_id = dplyr::matches("M_ID"),
-                    f_id = dplyr::matches("F_ID"),
-                    birth_yr = FAAR)%>%
+                    f_id = dplyr::matches("F_ID"))%>%
       dplyr::mutate(preg_id = as.integer(preg_id))
 
     moba_data <-
       suppressMessages(
         suppressWarnings(
-          moba_data %>%
-            dplyr::left_join(sv_info)))%>%
+          sv_info %>%
+            dplyr::left_join(mbrn)))%>%
       dplyr::mutate(preg_id=as.character(preg_id),
                     m_id=as.character(stringr::str_replace_all(m_id, stringr::fixed (" "), "")),
                     f_id=as.character(stringr::str_replace_all(f_id, stringr::fixed (" "), ""))) %>%
@@ -91,24 +321,27 @@ curate_dataset <- function(variables_required="none_specified",
 
     #Get item-level datasets and combine
 
+
+
     for(q in unique(moba_vars$questionnaire)){
 
       message(paste0("\nLoading data from questionnaire ",q,", which is number ",match(q,unique(moba_vars$questionnaire))," of ", length(unique(moba_vars$questionnaire)) ))
 
       if(q %in% c("Q1","Q3","QF")){
-        suppressMessages(qvars_temp <- haven::read_spss(paste0(pheno_data_root_dir,"PDB",PDB,"_", q,"_v12.sav")) %>%
+        suppressMessages(qvars_temp <- haven::read_spss(moba_filepaths %>% dplyr::filter(questionnaire==q) %>% .$filepath ) %>%
                            dplyr::select(preg_id = dplyr::matches("PREG_ID"),
                                          unlist(strsplit(paste0(dplyr::filter(moba_vars,questionnaire == q)$items, collapse=","),","))) %>%
                            dplyr::mutate(preg_id=as.character(preg_id)))
       }
       if(q %in% c("Far2")){
-        suppressMessages(qvars_temp <- haven::read_spss(paste0(pheno_data_root_dir,"PDB",PDB,"_", q,"_v12.sav")) %>%
+        suppressMessages(qvars_temp <- haven::read_spss(moba_filepaths %>% dplyr::filter(questionnaire==q) %>% .$filepath ) %>%
                            dplyr::select(f_id = dplyr::matches("F_ID"),
                                          unlist(strsplit(paste0(dplyr::filter(moba_vars,questionnaire == q)$items, collapse=","),","))) %>%
                            dplyr::mutate(f_id=as.character(f_id)))
       }
-      if(q %in% c("Q4_6months","Q5_18months","Q5yrs","Q6_3yrs","Q7yrs","Q8yrs")){
-        suppressMessages(qvars_temp <- haven::read_spss(paste0(pheno_data_root_dir,"PDB",PDB,"_", q,"_v12.sav")) %>%
+      if(q %in% c("Q4_6months","Q5_18months","Q5yrs","Q6_3yrs","Q7yrs","Q8yrs","MBRN")){
+        suppressMessages(qvars_temp <- haven::read_spss(moba_filepaths %>% dplyr::filter(questionnaire==q) %>% .$filepath ) %>%
+                           dplyr::mutate(EE_EASsoc_dummy = NA) %>%
                            dplyr::select(preg_id = dplyr::matches("PREG_ID"), BARN_NR,
                                          unlist(strsplit(paste0(dplyr::filter(moba_vars,questionnaire == q)$items, collapse=","),","))) %>%
                            dplyr::mutate(preg_id=as.character(preg_id)))
@@ -163,12 +396,15 @@ curate_dataset <- function(variables_required="none_specified",
                                                completion_threshold = completion_threshold,
                                                transformations = transformations)
 
+    }else{
+      moba_scales_items <- moba_data %>%
+        dplyr::select(preg_id:birth_yr)
     }
 
     #process non-scale variables with calls to relevant helper functions
 
     moba_other_data <- moba_data %>%
-        dplyr::select(preg_id:birth_yr)
+      dplyr::select(preg_id:birth_yr)
 
     if(nrow(moba_other_vars)>0){
       message("\nProcessing non-scale MoBa vars. These are: \n\n",paste0(c(moba_other_vars$var_name), collapse="", sep="\n"))
@@ -190,32 +426,139 @@ curate_dataset <- function(variables_required="none_specified",
     }
 
 
-    message("\nCurating the final dataset(s)...")
 
-    if(return_items==T){
+  # Implement return preferences
+
+    if(return_items==T & nrow(moba_scale_vars)>0){
       moba_data_combined <-
         suppressMessages(
           suppressWarnings(list( scales =
                                    moba_scales_items[["scales"]] %>%
                                    dplyr::left_join(moba_other_data),
                                  items =
-                                   moba_scales_items$items)))
-      message("\nDataset curation complete; outputting as data.frame. You requested that
-scale items be returned (using return_items=TRUE), so output is a list, of which the
-first element (\"scales\") is your scale-level dataset, and the second (\"items\")
-is your item-level dataset, with \"_raw\" and \"_coded\" (i.e., numeric) versions of all items
-for each scale.")
+                                   moba_scales_items[["items"]] %>%
+                                   dplyr::left_join(moba_other_data %>%
+                                                      dplyr::select(preg_id,m_id,f_id,BARN_NR,birth_yr,dplyr::matches("_raw"))))))
+      if(out_format == "list"){
+
+      message(
+        "\nYou requested that scale items be returned (using return_items=TRUE), so
+output is a list, of which the first element (\"scales\") is your scale-level
+dataset, and the second (\"items\")is your item-level dataset, with \"_raw\" and
+\"_coded\" (i.e., numeric) versions of all items for each scale.")
+
+      }else{
+
+        moba_data_combined <- moba_data_combined %>%
+          purrr::reduce(dplyr::full_join, by=c("preg_id","BARN_NR","m_id","f_id"))
+
+      message(
+        "\nYou requested that scale items be returned (using return_items=TRUE)
+and that the output be a 'merged_df', so your item-level dataset, with \"_raw\" and
+\"_coded\" (i.e., numeric) versions of all items for each scale, has been joined
+to your main dataset.")
+
+      }
+
     }else{
       moba_data_combined <-
         suppressMessages(
           suppressWarnings(moba_scales_items %>%
                              dplyr::left_join(moba_other_data)))
-message("\nDataset curation complete; outputting as data.frame.")}
+
+    }
+
+    message("\nMoBa dataset curation complete.")
 
 
+
+
+    all_data_combined[["moba"]]<- moba_data_combined
   }
-  #Update to merge with others sources when implmented
 
-  return(moba_data_combined)
+
+  #NPR
+  ###################################################################################
+  if(any(sources$source == "npr")){
+
+    message("\nProcessing NPR variables...")
+
+    if(!exists("exclusions")|
+       !exists("recursive")|
+       !exists("group_all")|
+       !exists("dx_owner")){
+      warning(
+        "\nNPR data: please be aware that you are using one or more defaults from
+curate_npr(). These are consequential for how the NPR data are processed, so be
+sure that you are getting what you want by checking ?curate_npr and, if needs
+be, re-running your curate_dataset() with additional arguments to pass to
+curate_npr().")
+    }
+
+    npr_vars <-
+      suppressMessages(
+        suppressWarnings(
+          reqd_vars %>%
+            dplyr::filter(source =="npr")))
+
+
+        npr_data_combined <- curate_npr(diagnoses = npr_vars$var_name, ...)
+
+
+    message("\nNPR dataset curation complete.")
+
+    all_data_combined[["npr"]]<- npr_data_combined
+  }
+
+  #KUHR
+  ###################################################################################
+  if(any(sources$source == "kuhr")){
+
+    message("\nProcessing KUHR variables...")
+
+    if(!exists("code_system")|
+       !exists("primary_care_only")|
+       !exists("group_all")|
+       !exists("dx_owner")){
+      warning(
+        "\nKUHR data: please be aware that you are using one or more defaults from
+curate_kuhr(). These are consequential for how the KUHR data are processed, so be
+sure that you are getting what you want by checking ?curate_kuhr and, if needs
+be, re-running your curate_dataset() with additional arguments to pass to
+curate_kuhr().")
+    }
+
+    kuhr_vars <-
+      suppressMessages(
+        suppressWarnings(
+          reqd_vars %>%
+            dplyr::filter(source =="kuhr")))
+
+
+    kuhr_data_combined <- curate_kuhr(diagnoses = kuhr_vars$var_name, ...)
+
+
+    message("\nKUHR dataset curation complete.")
+
+    all_data_combined[["kuhr"]]<- kuhr_data_combined
+  }
+
+
+  message("\nCurating the final dataset(s)...")
+
+  if(out_format == "merged_df"){
+
+      all_data_combined <- all_data_combined %>%
+      purrr::reduce(dplyr::full_join)
+  }
+  message("\nDataset curation complete.")
+  return(all_data_combined)
+
+  if(!is.null(log)){
+    logr::log_close()
+  }
+
+
+
 }
 

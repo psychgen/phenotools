@@ -4,10 +4,13 @@
 \alias{available_variables}
 \title{Available variables}
 \usage{
-available_variables(source = "moba")
+available_variables(source = c("moba", "npr", "kuhr"))
 }
 \arguments{
-\item{source}{Currently "moba", "kuhr", "npr}
+\item{source}{Currently any combination of "moba", "kuhr", "npr}
+}
+\value{
+a data.frame with variable names and basic info
 }
 \description{
 \code{available_variables} returns a dataframe with names and basic info

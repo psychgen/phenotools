@@ -29,7 +29,7 @@ curate_moba_scales <- function(moba_scale_vars,
 
 
   # process scale vars - should create progress indicator for this as it can take a while (the below is a v rough approx)
-  # need to do this by questinnnaire or phenotype to avoid massive dataset reshapes
+  # need to do this by questionnaire or phenotype to avoid massive dataset reshapes
 
 
   message(paste0("\nProcessing MoBa scale variables. These are: \n\n",paste0(c(moba_scale_vars$var_name), collapse="", sep="\n"),
@@ -75,8 +75,8 @@ for your requested scales..." ))
 
     moba_scale_data_temp <- moba_item_data_temp %>%
       dplyr::group_by(preg_id,BARN_NR,var_name) %>%
-      dplyr::summarise(score = ifelse(sum(!is.na(numval))>=(completion_threshold*n()),
-                                      round(mean(numval, na.rm=T)*n(),0),
+      dplyr::summarise(score = ifelse(sum(!is.na(numval))>=(completion_threshold*dplyr::n()),
+                                      round(mean(numval, na.rm=T)*dplyr::n(),0),
                                       NA)) %>%
       tidyr::spread(var_name, score)
 
@@ -98,7 +98,7 @@ for your requested scales..." ))
                                  dplyr::select(item_name, var_name, item_no) %>%
                                  tidyr::unite("var_item", c("var_name","item_no"))))) %>%
         tidyr::unite("var_item_code",c("var_item","item_name")) %>%
-        dplyr::select(-numval,-var_name) %>%
+        dplyr::select(-numval,-var_name,-pos_numval,-neg_numval) %>%
         tidyr::spread(var_item_code, val)%>%
         dplyr::rename_at(dplyr::vars(-preg_id:-birth_yr), function(x){paste0(x,"_raw")} )
       moba_item_coded_temp <-
@@ -111,7 +111,7 @@ for your requested scales..." ))
                                  dplyr::select(item_name, var_name, item_no) %>%
                                  tidyr::unite("var_item", c("var_name","item_no"))))) %>%
         tidyr::unite("var_item_code",c("var_item","item_name")) %>%
-        dplyr::select(-val,-var_name) %>%
+        dplyr::select(-val,-var_name,-pos_numval,-neg_numval) %>%
         tidyr::spread(var_item_code, numval) %>%
         dplyr::rename_at(dplyr::vars(-preg_id:-birth_yr), function(x){paste0(x,"_coded")} )
 

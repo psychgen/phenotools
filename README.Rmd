@@ -20,7 +20,7 @@ library(phenotools)
 
 
 
-#phenotools
+# phenotools
 
 
 
@@ -32,22 +32,22 @@ Please contact laurie.hannigan@bristol.ac.uk with bugs, feedback, or development
 
 ## Installation
 
-You can install the latest working version as follows...
+**phenotools** is built and runs entirely within the [TSD](https://www.uio.no/english/services/it/research/sensitive-data/) environment, in which MoBa data are accessed for analyses. As such, you can't install the package directly from github. Instead, you should download the binary for the latest working version from [here](https://osf.io/6g8bj/files/), import to a sensible location in your project in TSD and install in R as follows, amending the path appropriately:
 
 ```{r install, echo=TRUE, eval= FALSE}
-install.packages("//tsd-evs/p471/data/durable/common/software/phenotools_0.1.0.zip", 
+install.packages("//tsd-evs/p471/data/durable/common/software/phenotools_0.2.3.zip", 
                  repos=NULL,
                  type = "binary")
 ```
 
-At present, any missing dependencies need to be installed manually from the TSD CRAN copy, i.e.,
+Depending on the R version you are working with in TSD, any missing dependencies may be able to be installed manually from the TSD CRAN copy, i.e.,
 
 ```{r dependencies, echo=TRUE, eval= FALSE}
 install.packages('dplyr',
                  repos = "file://tsd-evs/shared/R/cran")
 ```
 
-You can also install from source if needed.
+Otherwise, you will need to download the binaries for those packages and import to TSD. You could make use of the [miniCRAN](https://cran.r-project.org/web/packages/miniCRAN/index.html) package if you need to install a lot of packages in one go.
 
 &nbsp;
 &nbsp;
@@ -66,7 +66,7 @@ These functions are outlined below. However, to make full usage of the phenotool
 
 ```{r initialise, echo=T} 
 initialise_project(path="C:/Users/p471-lauriejh/newproject",
-                   template_filepath="N:/data/durable/common/new_project_template/.")
+                   template_filepath="//tsd-evs/p471/data/durable/common/new_project_template/.")
 ```
 
 This creates a project directory and Rstudio .proj file in your specified location, populated with sub-directories and files from a template - shown here in the "Files" pane in Rstudio after opening the new project:
@@ -78,103 +78,7 @@ This creates a project directory and Rstudio .proj file in your specified locati
 
 </center>
 
+Using this template helps to keep consistency across analytic projects, making collaboration and reproducible working easier. Moreover, some of phenotools' reporting functions make use of this structure to find relevant files and combine them for export, so deviating too far from this core structure will restrict the extent to which the package can help you at the other end. The template is available for download [here](https://osf.io/6g8bj/files/).
 
-Using this template helps to keep consistency across analytic projects, making collaboration and reproducible working easier. Moreover, some of phenotools' reporting functions make use of this structure to find relevant files and combine them for export, so deviating too far from this core structure will restrict the extent to which the package can help you at the other end.
-
-&nbsp;
-&nbsp;
-
-## Data preparation with phenotools
-
-The main workhorse of the phenotools package is the `curate_dataset` function. The purpose of this function is to curate an analysis-ready dataset based on the variables, from MoBa and other supported sources, you request. This means that psychometric scales will be coded up for you, and derived variables such as BMI computed and returned along with specific demographic variables and family-level IDs.
-
-The first step is to ascertain what variables are available and what names you need to refer to them by in your request. This is done using the `available_variables` function:
-
-```{r available_vs, echo = T}
-phenovars <- available_variables(source = "moba")
-
-head(phenovars)
-tail(phenovars)
-
-#To see all available variables (or see code further down for searching specific strings):
-#view(phenovars)
-```
-
-
-To get a dataset with a variable that you want, you need to quote its var_name as the input for the `variables_required` option in the `curate_dataset` function:
-
-```{r curate1, echo = T}
-mydata <- curate_dataset(variables_required="scl_anx_m_q3",
-                         pheno_data_root_dir="N:/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
-                         PDB="2306",
-                         completion_threshold=0.5,
-                         return_items=FALSE,
-                         consistent_items=FALSE,
-                         transformations=NULL)
-
-head(mydata)
-```
-
-
-Other important inputs here are the root directory of the MoBa phenotypic data (SPSS format) and PDB code for the project you are working in. Both default to the correct values for the p471 TSD project.
-
-Likely, you will want a dataset with multiple phenotypes; `variables_required` needs the var_names for your variables as a concatenated string:
-
-```{r curate2, echo = T, eval= F}
-
-##Not run
-mydata <- curate_dataset(variables_required=c("scl_anx_m_q3","bmi_full_f_q1"))
-```
-
-
-Alternatively, you can use columns in the dataframe produced by the `available_variables` function to get a list of variables and input that: 
-
-```{r curate2.1, echo = T}
-
-phenovars <- available_variables(source = "moba")
-
-head(phenovars)
-
-myphenovars <- dplyr::filter(phenovars,
-                            stringr::str_detect(measure,"SCL"),
-                            stringr::str_detect(subscale,"depression"))
-
-myphenovars$var_name
-```
-```{r curate2.2, echo= T, eval = F}
-##Not run
-mydata <- curate_dataset(variables_required=myphenovars$var_name)
-```
-
-
-In the above cases `curate_dataset` returns a data.frame with the processed scale scores and other variables. However, if you set the `return_items` option to `TRUE`, then the result of `curate_dataset` will be a list, where the first element is the scale-level dataset, and the second element is the item-level dataset.
-
-```{r curate3, echo = T}
-
-mydata <- curate_dataset(variables_required=c("scl_anx_m_q3","bmi_full_f_q1"),
-                         return_items = T)
-
-str(mydata)
-
-myscaledata <- mydata[["scales"]]
-myitemdata <- mydata[["items"]]
-
-head(myscaledata)
-head(myitemdata)
-```
-
-See the help pages for `curate_dataset` for more options.
-
-&nbsp;
-&nbsp;
-
-## Analysis documentation and reporting with phenotools (in development)
-
-Functions to assist with analysis documentation and reporting are currently in development. These include:
-
-* `dataset_report()` which creates an Rmarkdown file for specified output with a summary report of the dataset, including descriptive statistics, psychometric properties of scales and attrition analyses for longitudinal data
-
-* `synthesise_data()` and `simulate_data()` which make and save synthetic or simulated datasets for export with analysis code based on dataset properties and/or structure
-
-* `dataprep_code()` which produces an R file with the code used to generate your dataset for export
+For instructions on how to use the main package functions for data preparation and reporting, see the package vignette (run `vignette("phenotools")`)`.
 

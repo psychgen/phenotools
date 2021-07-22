@@ -1,0 +1,262 @@
+---
+title: "phenotools"
+output: 
+  rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{phenotools}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "inst/rstudio/templates/",
+  out.width = "100%"
+)
+library(phenotools)
+library(magrittr)
+```
+
+
+
+![](phenotools.png)
+
+
+
+The goal of the **phenotools** package is to facilitate efficient and reproducible use of phenotypic data from MoBa and linked registry sources in the TSD environment. 
+
+Please contact laurie.hannigan@bristol.ac.uk with bugs, feedback, or development ideas.
+
+&nbsp;
+
+
+## Data preparation with phenotools: MoBa data
+
+The main workhorse of the phenotools package is the `curate_dataset` function. The purpose of this function is to curate an analysis-ready dataset based on the variables, from MoBa and other supported sources, you request. This means that psychometric scales will be coded up for you, and derived variables such as BMI computed and returned along with specific demographic variables and family-level IDs.
+
+The first step is to ascertain what variables are available and what names you need to refer to them by in your request. This is done using the `available_variables` function:
+
+```{r available_vs, echo = T}
+phenovars <- available_variables(source = c("moba","npr","kuhr"))
+
+head(phenovars)
+tail(phenovars)
+
+#To see all available variables (or see code further down for searching specific strings):
+#View(phenovars)
+```
+
+
+To get a dataset with a variable that you want, you need to quote its var_name as the input for the `variables_required` option in the `curate_dataset` function:
+
+```{r curate1, echo = T}
+mydata <- curate_dataset(variables_required="scl_anx_m_3yr",
+                         pheno_data_root_dir="N:/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+                         PDB="2306",
+                         moba_data_version=12,
+                         completion_threshold=0.5,
+                         return_items=FALSE,
+                         consistent_items=FALSE,
+                         out_format="merged_df")
+
+head(mydata)
+```
+
+
+Other important inputs here are the root directory of the MoBa phenotypic data (SPSS format) and PDB code for the project you are working in. Both default to the correct values for the p471 TSD project.
+
+Likely, you will want a dataset with multiple phenotypes; `variables_required` needs the var_names for your variables as a concatenated string:
+
+```{r curate2, echo = T, eval= F}
+
+##Not run
+mydata <- curate_dataset(variables_required=c("scl_anx_m_3yr","bmi_derived_f_q1"))
+```
+
+
+Alternatively, you can use `variable_search` on the dataframe produced by the `available_variables` function to get a list of variables, and input that: 
+
+```{r curate2.1, echo = T}
+
+myphenovars <-  available_variables(source = "moba") %>% 
+  variable_search("depress*", where="anywhere") %>% #You can search for specifc variable names, or use words in the variable description to get what you want
+  .$var_name
+
+myphenovars
+```
+```{r curate2.2, echo= T, eval = F}
+##Not run
+mydata <- curate_dataset(variables_required=myphenovars)
+```
+
+
+In the above cases `curate_dataset` returns a data.frame with the processed scale scores and other variables. However, if you set the `return_items` option to `TRUE`, then the result of `curate_dataset` will contain item-level data: either, if the `out_format` option is set to `'list'` as the second element at the `moba` level of a nested list (where the first element is the scale-level dataset); or merged with the scale-level data, if the `out_format` option is set to `'merged_df'`.
+
+```{r curate3, echo = T}
+
+mydata <- curate_dataset(variables_required=c("scl_anx_m_3yr","bmi_derived_f_q1"),
+                         return_items = T, out_format="list")
+
+str(mydata)
+
+myscaledata <- mydata$moba$scales
+myitemdata <- mydata$moba$items
+
+names(myscaledata)
+names(myitemdata)
+```
+
+See the help pages (`?curate_dataset`) for more options.
+
+&nbsp;
+&nbsp;
+
+## Data preparation with phenotools: other data sources
+
+Data from other sources (currently `r paste0(unique(available_variables()$source),collapse=", ")` can also be pulled in using the `curate_dataset` function. As with MoBa data, the variables you can request are returned by the `available_variables` function, and you see which additional arguments you may need to supply by looking at the help pages for the curate_>source< function that will be called internally by `curate_dataset`. 
+
+### Example: NPR data
+
+When you request variables from the Norwegian Patient Registry (NPR), `curate_dataset` calls the `curate_npr` function internally. Let's add some npr variables without adding any other arguments to our `curate_dataset` call: 
+
+
+```{r curate4, echo = T}
+
+suppressMessages(library(dplyr))
+
+set.seed(8893)
+
+#Randomly select some available NPR codes
+random5nprcodes <- suppressMessages(available_variables(source = "npr") %>% 
+  dplyr::slice_sample(n=5) %>% 
+  .$var_name)
+
+print(random5nprcodes)
+
+#Add the selected npr codes to the curate_dataset call (as 'variables_required'), changing nothing else:
+mydata <- curate_dataset(variables_required=list(moba = c("scl_anx_m_3yr","bmi_derived_f_q1"),
+                                                 npr = random5nprcodes),
+                         return_items = T, 
+                         out_format="list")
+
+```
+
+Note that in the above call to `curate_dataset`, the specification of the `variables_required` option has changed: when you want variables for sources other than (or as well as) MoBa, your input to `variables_required` needs to be a named list. Moreover, the names need to correspond to known sources as returned in `r paste0(unique(available_variables()$source),collapse=", ")`.
+
+```{r curate4.1, echo = T}
+
+str(mydata)
+
+myscaledata <- mydata$moba$scales
+myitemdata <- mydata$moba$items
+mynprdata <- mydata$npr
+
+names(myscaledata)
+names(myitemdata)
+names(mynprdata)
+```
+
+This works - in that we get an NPR dataframe returned with a set of variables (see `?curate_npr` for how to interpret these) corresponding to each of our codes - but we get a warning about the importance of the `curate_npr` defaults. 
+
+After checking the help page, we can add these arguments to the `curate_dataset` call to avoid the warning. In this example, we also modify them, now imagining a scenario where our 5 random NPR codes are representative of a single group of diagnoses that is meaningful for our analyses. To do this, we set `group_all = TRUE` and `dx_groupname="ourdiagnoses"`. We will also ask for `output="merged_df"`: 
+
+
+```{r curate5, echo = T}
+
+
+#Add the selected npr codes to the curate_dataset call (as 'variables_required'), with arguments from curate_npr specified:
+mydata <- curate_dataset(variables_required=list(moba = c("scl_anx_m_3yr","bmi_derived_f_q1"),
+                                                 npr = random5nprcodes),
+                         return_items = T, out_format="merged_df",
+                         exclusions=NULL, 
+                         recursive=TRUE,
+                         group_all=TRUE,
+                         dx_groupname="ourdiagnoses",
+                         dx_owner="child")
+
+str(mydata)
+
+
+```
+
+The registry files are often large, so if you are curating multiple datasets, or using trial-and-error to build your curation, you might get fed up waiting for them to load every time. If so, you have the option to use the `preload_>source<` functions (e.g., `preload_npr`) and then feed the result of that into your curate calls. We'll do that in the example below.
+
+Finally, it is worth noting that we can create variables pertaining to multiple different groups of NPR diagnoses in one go by adding them in a single string in `variables_required` with the format `r paste0("ourdiagnoses = ",paste0(random5nprcodes,collapse=",")) `, as shown below:
+
+```{r curate6, echo = T}
+
+#First preload the npr data file as described above
+
+npr_full <- preload_npr(
+  npr_data_root_dir = "//tsd-evs/p471/data/durable/data/NPR/processed/",
+  npr_filename = "18_34161_NPR.sav")
+
+#We'll feed this into the curate_dataset call below, speeding that (and any subsequent dataset curations using NPR data) up considerably
+
+random5morenprcodes <- suppressMessages(available_variables(source = "npr") %>% 
+  dplyr::slice_sample(n=5) %>% 
+  .$var_name)
+
+print(random5morenprcodes)
+
+npr_groups <- c(paste0("ourdiagnoses = ",paste0(random5nprcodes,collapse=",")),
+                paste0("ourotherdiagnoses = ",paste0(random5morenprcodes,collapse=",")))
+
+
+#Add the selected npr codes to the curate_dataset call (as 'variables_required'), with arguments from curate_npr specified:
+mydata <- curate_dataset(variables_required=list(moba = c("scl_anx_m_3yr","bmi_derived_f_q1"),
+                                                 npr = npr_groups),
+                         return_items = T, out_format="merged_df",
+                         exclusions=NULL, 
+                         recursive=TRUE,
+                         group_all=TRUE,  # This is essentially ignored here, as we gave details of the groupings in the npr_groups strings
+                         dx_groupname=NULL,# This is essentially ignored here, as we gave details of the groupings in the npr_groups strings
+                         dx_owner="child",
+                         npr_full=npr_full) 
+
+str(mydata)
+
+
+```
+
+A note on working with the output from `curate_npr` (generated via the above `curate_dataset` calls): the dataframe returned as standard contains one row per MoBa child (unique by a combination of preg_id and BARN_NR). However, often the child (or their parent, if that is who you selected as the `dx_owner`) will have had mulitple healthcare contacts for your requested (groups of) diagnoses. Information about these multiple contacts is preserved in the variables `all_dx` variables, but these are tricky to use in their standard form. If you *are* interested in this information, you can use the `pivot_curated_npr` function to convert the result of a `curate_npr` call back into a dataset that has one row per contact per diagnosis (/diagnosis grouping):
+
+
+```{r curate7, echo = T}
+mydata <- suppressMessages(curate_dataset(variables_required=list(moba = c("scl_anx_m_3yr","bmi_derived_f_q1"),
+                                                 npr = npr_groups),
+                         return_items = T, out_format="merged_df",
+                         exclusions=NULL, 
+                         recursive=TRUE,
+                         group_all=TRUE,  
+                         dx_groupname=NULL,
+                         dx_owner="child", 
+                         npr_full=npr_full)) 
+
+#You can just feed in the whole dataset from the curate_dataset command above, and non-all_dx variables will be ignored
+my_long_npr_data <- pivot_curated_npr(mydata) 
+
+#Let's look at the output only those who actually had healthcare contacts for these diagnoses (otherwise lots of NAs):
+
+my_long_npr_data %>% 
+  dplyr::filter(!is.na(hc_contact)) %>% 
+  dplyr::select(preg_id, BARN_NR, dx_group,hc_contact, info,value)
+  head(10)
+
+
+```
+&nbsp;
+&nbsp;
+
+## Analysis documentation and reporting with phenotools (in development)
+
+Functions to assist with analysis documentation and reporting are currently in development. These include:
+
+* `dataset_report()` which creates an Rmarkdown file for specified output with a summary report of the dataset, including descriptive statistics, psychometric properties of scales and attrition analyses for longitudinal data
+
+* `synthesise_data()` and `simulate_data()` which make and save synthetic or simulated datasets for export with analysis code based on dataset properties and/or structure
+
+* `dataprep_code()` which produces an R file with the code used to generate your dataset for export

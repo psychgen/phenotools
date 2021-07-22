@@ -5,24 +5,31 @@
 \title{Curate dataset}
 \usage{
 curate_dataset(
-  variables_required = "none_specified",
+  variables_required,
  
-    pheno_data_root_dir = "//tsd-evs/p471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+    moba_data_root_dir = "//tsd-evs/p471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
   PDB = "2306",
+  moba_data_version = 12,
   completion_threshold = 0.5,
   return_items = FALSE,
   consistent_items = FALSE,
   transformations = NULL,
-  log = FALSE
+  log = NULL,
+  out_format = "list",
+  override_filenames = NULL,
+  ...
 )
 }
 \arguments{
 \item{variables_required}{What variables are required? See
 \code{available_variables} for a valid inputs}
 
-\item{pheno_data_root_dir}{Where is the raw MoBa phenotypic data?}
+\item{moba_data_root_dir}{Where is the raw MoBa phenotypic data?}
 
 \item{PDB}{What is the PDB code for your TSD project?}
+
+\item{moba_data_version}{Which version of MoBa phenotypic data are you using?
+Defaults to 12; 11 is also a viable option for some scales}
 
 \item{completion_threshold}{What proportion of scale items need
 to be present for a scale score to be computed?}
@@ -35,6 +42,18 @@ for variables that are measured longitudinally?}
 \item{transformations}{Not yet implemented}
 
 \item{log}{filepath for code_preparation log}
+
+\item{out_format}{should output be a "list" or "merged_df"; defaults to "list"}
+
+\item{override_filenames}{questionnaire filenames are built by combining your
+inputs on PDB, moba_data_version, and the standard codes for each questionnaire
+(see unique(available_variables("moba")$questionnaire) + "SV_INFO" and "MBRN")
+to give the format: "PDB>PDB<_>code<_v>moba_data_version<.sav"). If you need to
+override this because the filenames have been altered in your TSD project, add
+ a vector of strings here, e.g., 'override_filenames = c("Q1 = new_Q1_filename.sav")}
+
+\item{...}{arguments to pass to internal functions, see ?curate_moba_scales
+and ?curate_npr}
 }
 \description{
 \code{curate_dataset} is the main workhorse of the data preparation

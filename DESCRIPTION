@@ -1,18 +1,26 @@
 Package: phenotools
 Type: Package
 Title: Facilitates Reproducible Workflows With Data from MoBa and Linked Registry Sources
-Version: 0.1.1
+Version: 0.2.3
 Authors@R: person("Laurie", "Hannigan", email = "lauriejhannigan@gmail.com",
                   role = c("aut", "cre"))
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Description: The main goal of the **phenotools** package is to facilitate efficient and reproducible use of phenotypic data from MoBa and linked registry sources in the TSD environment.
+    The package has functions to assist in 3 areas: project management, dataset curation, and reproducible reporting.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1
 Depends: R (>= 3.6)
+Suggests: 
+    fakeR,
+    knitr,
+    rmarkdown,
+    logr
 Imports:
     dplyr, 
     stringr,
     tidyr,
-    haven
+    haven, 
+    tibble,
+    readr
+VignetteBuilder: knitr
