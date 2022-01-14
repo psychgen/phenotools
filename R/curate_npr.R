@@ -151,7 +151,7 @@ curate_npr <- function(diagnoses,
       mbrn <- haven::read_spss(paste0(moba_data_root_dir,"PDB",PDB,"_MBRN_541_v",moba_data_version,".sav")) %>%
         dplyr::select(preg_id = dplyr::matches("PREG_ID"),BARN_NR,FAAR)
 
-      sv_info <- haven::read_spss(paste0(moba_data_root_dir,"PDB",PDB,"_SV_INFO_v",moba_data_version,"_old_version.sav")) %>%
+      sv_info <- haven::read_spss(paste0(moba_data_root_dir,"PDB",PDB,"_SV_INFO_v",moba_data_version,".sav")) %>%
         dplyr::select(preg_id = dplyr::matches("preg_id"),
                       m_id = dplyr::matches("M_ID"),
                       f_id = dplyr::matches("f_id") )%>%
@@ -441,6 +441,13 @@ preg_id and BARN_NR). Therefore, counts of parental diagnoses based on these dat
 will be inflated (some parents appear in multiple rows). For accurate counts, you
 need to restrict to unique m_id/f_ids.")
 }
+
+
+  #String replace commas with | to avoid problems with write.csv
+
+  npr_processed <- npr_processed %>%
+    dplyr::mutate_if(is.character, list(~stringr::str_replace_all(.,",","|") ))
+
 
   message("\nNPR data processing complete.")
   return(npr_processed)

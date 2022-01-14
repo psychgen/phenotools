@@ -55,9 +55,12 @@ for your requested scales..." ))
       dplyr::select(tidyselect::matches("response")) %>%
       tidyr::gather(response,val) %>%
       tidyr::drop_na(val) %>%
+      dplyr::mutate(val=stringr::str_split(val, "\\|")) %>%
       dplyr::mutate(pos_numval = dplyr::row_number()-1,
                     neg_numval = rev(dplyr::row_number()-1)) %>%
-      dplyr::select(-response)
+      dplyr::select(-response) %>%
+      tidyr::unnest(cols=c(val))
+
 
     moba_item_data_temp <-
       suppressMessages(

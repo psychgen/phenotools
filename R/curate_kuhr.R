@@ -157,7 +157,7 @@ currently this function can only run with the primary_care_only argument set to 
     mbrn <- haven::read_spss(paste0(moba_data_root_dir,"PDB",PDB,"_MBRN_541_v",moba_data_version,".sav")) %>%
       dplyr::select(preg_id = dplyr::matches("PREG_ID"),BARN_NR,FAAR)
 
-    sv_info <- haven::read_spss(paste0(moba_data_root_dir,"PDB",PDB,"_SV_INFO_v",moba_data_version,"_old_version.sav")) %>%
+    sv_info <- haven::read_spss(paste0(moba_data_root_dir,"PDB",PDB,"_SV_INFO_v",moba_data_version,".sav")) %>%
       dplyr::select(preg_id = dplyr::matches("preg_id"),
                     m_id = dplyr::matches("M_ID"),
                     f_id = dplyr::matches("f_id") )%>%
@@ -396,6 +396,12 @@ need to restrict to unique m_id/f_ids.")
     }
 
     message("\nKUHR data processing complete.")
+
+    #String replace commas with | to avoid problems with write.csv
+
+    kuhr_processed <- kuhr_processed %>%
+      dplyr::mutate_if(is.character, list(~stringr::str_replace_all(.,",","|") ))
+
     return(kuhr_processed)
 
 

@@ -213,11 +213,11 @@ For a list of valid pre-processed variable names run avaliable_variables(), or c
     #make reqd_vars (with new_vars_processed if exists)
     if(exists("new_vars_processed")){
       reqd_vars <- suppressMessages(available_variables(source = c("moba","npr","kuhr"))) %>%
-        dplyr::filter(var_name %in% variables_required$var_name) %>%
+        dplyr::filter(var_name %in% variables_required$var_name & source %in% variables_required$source) %>%
         dplyr::bind_rows(new_vars_processed)
     }else {
       reqd_vars <- suppressMessages(available_variables(source = c("moba","npr","kuhr"))) %>%
-        dplyr::filter(var_name %in% variables_required$var_name)
+        dplyr::filter(var_name %in% variables_required$var_name & source %in% variables_required$source)
     }
 
 
@@ -387,6 +387,7 @@ in override_filenames or else forgotten the '.sav' file extension.")
     # process scale vars - should create progress indicator for this as it can take a while
 
     if(nrow(moba_scale_vars)>0){
+
 
       moba_scales_items <-  curate_moba_scales(moba_scale_vars,
                                                moba_scale_vars_long,

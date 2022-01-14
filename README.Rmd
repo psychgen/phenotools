@@ -35,7 +35,7 @@ Please contact laurie.hannigan@bristol.ac.uk with bugs, feedback, or development
 **phenotools** is built and runs entirely within the [TSD](https://www.uio.no/english/services/it/research/sensitive-data/) environment, in which MoBa data are accessed for analyses. As such, you can't install the package directly from github. Instead, you should download the binary for the latest working version from [here](https://osf.io/6g8bj/files/), import to a sensible location in your project in TSD and install in R as follows, amending the path appropriately:
 
 ```{r install, echo=TRUE, eval= FALSE}
-install.packages("//tsd-evs/p471/data/durable/common/software/phenotools_0.2.3.zip", 
+install.packages("//tsd-evs/p471/data/durable/common/software/phenotools_0.2.7.zip", 
                  repos=NULL,
                  type = "binary")
 ```

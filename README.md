@@ -26,7 +26,7 @@ your project in TSD and install in R as follows, amending the path
 appropriately:
 
 ``` r
-install.packages("//tsd-evs/p471/data/durable/common/software/phenotools_0.2.3.zip", 
+install.packages("//tsd-evs/p471/data/durable/common/software/phenotools_0.2.7.zip", 
                  repos=NULL,
                  type = "binary")
 ```
