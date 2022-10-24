@@ -7,7 +7,7 @@
 curate_dataset(
   variables_required,
  
-    moba_data_root_dir = "//tsd-evs/p471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+    moba_data_root_dir = "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
   PDB = "2306",
   moba_data_version = 12,
   completion_threshold = 0.5,
@@ -41,7 +41,7 @@ for variables that are measured longitudinally?}
 
 \item{transformations}{Not yet implemented}
 
-\item{log}{filepath for code_preparation log}
+\item{log}{filepath for code_preparation log - not yet implemented}
 
 \item{out_format}{should output be a "list" or "merged_df"; defaults to "list"}
 
@@ -61,5 +61,39 @@ component of phenotools, producing analysis-ready datasets with
 specified variables from MoBa and other registry sources
 }
 \details{
-Detailed description...
+This function fulfills the main purpose of the phenotools package by taking
+details of variables you want in your analytic dataset, retrieving and processing
+the raw data needed to make those variables, and returning them to you in either a
+dataframe or list of dataframes. For the function to work, you need to be able
+to direct it to the local directory that is home to the raw (i.e., as received)
+MoBa phenotypic data files >=v11 in SPSS format. Remember, datasets can only be
+curated on the basis of variables that exist in your raw MoBa data files. If something
+is not working, it is worth checking MoBa documentation for item codes and verifying that
+they exist in your raw data.
+
+For a full introduction to the \code{curate_dataset} function, see the package
+vignette (\code{vignette("phenotools")}).
+}
+\examples{
+
+# Curate a scale- and item-level dataet from MoBa only, returned as a list
+
+mydata <- curate_dataset(variables_required=c("scl_anx_m_3yr","bmi_derived_f_q1"),return_items = T, out_format="list")
+
+# Curate a scale- and item-level dataet from MoBa only, returned as a merged dataframe
+
+mydata <- curate_dataset(variables_required=c("scl_anx_m_3yr","bmi_derived_f_q1"),return_items = T, out_format="merged_df")
+
+# Curate a dataset from multiple sources
+
+mydata <- curate_dataset(variables_required=list(moba = c("scl_anx_m_3yr","bmi_derived_f_q1"),
+npr = random5nprcodes),
+return_items = T, out_format="merged_df",
+exclusions=NULL,
+recursive=TRUE,
+group_all=TRUE,
+dx_groupname="ourdiagnoses",
+dx_owner="child")
+
+For more examples, see the package vignette (\code{vignette("phenotools")}).
 }

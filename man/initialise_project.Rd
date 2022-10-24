@@ -6,7 +6,7 @@
 \usage{
 initialise_project(
   path,
-  template_filepath = "//tsd-evs/p471/data/durable/common/new_project_template/."
+  template_filepath = "//ess01/P471/data/durable/common/new_project_template/."
 )
 }
 \arguments{

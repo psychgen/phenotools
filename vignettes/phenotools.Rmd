@@ -18,6 +18,17 @@ knitr::opts_chunk$set(
 )
 library(phenotools)
 library(magrittr)
+
+mask_ids <- function(x){
+  
+  max.val = nrow(x)*10
+  count <- nchar(as.character(max.val))         
+  size <- paste("%0",count,"d",sep="")  
+  nums <- sprintf(size,sample(1:max.val)[1:nrow(x)])  
+  dat<- x %>% 
+    dplyr::mutate(across(matches("_id"), ~ sprintf(size,sample(1:max.val)[1:nrow(x)])  ))
+  return(dat)
+}
 ```
 
 
@@ -60,9 +71,10 @@ mydata <- curate_dataset(variables_required="scl_anx_m_3yr",
                          completion_threshold=0.5,
                          return_items=FALSE,
                          consistent_items=FALSE,
-                         out_format="merged_df")
+                         out_format="merged_df") %>% 
+  mask_ids() #We replace the actual IDs here for demo purposes
 
-head(mydata)
+head(mydata) 
 ```
 
 
@@ -98,9 +110,9 @@ In the above cases `curate_dataset` returns a data.frame with the processed scal
 ```{r curate3, echo = T}
 
 mydata <- curate_dataset(variables_required=c("scl_anx_m_3yr","bmi_derived_f_q1"),
-                         return_items = T, out_format="list")
+                         return_items = T, out_format="list") 
 
-str(mydata)
+str(mydata, vec.len = 0)
 
 myscaledata <- mydata$moba$scales
 myitemdata <- mydata$moba$items
@@ -140,7 +152,7 @@ print(random5nprcodes)
 mydata <- curate_dataset(variables_required=list(moba = c("scl_anx_m_3yr","bmi_derived_f_q1"),
                                                  npr = random5nprcodes),
                          return_items = T, 
-                         out_format="list")
+                         out_format="list") 
 
 ```
 
@@ -148,7 +160,7 @@ Note that in the above call to `curate_dataset`, the specification of the `varia
 
 ```{r curate4.1, echo = T}
 
-str(mydata)
+str(mydata, vec.len = 0)
 
 myscaledata <- mydata$moba$scales
 myitemdata <- mydata$moba$items
@@ -175,9 +187,9 @@ mydata <- curate_dataset(variables_required=list(moba = c("scl_anx_m_3yr","bmi_d
                          recursive=TRUE,
                          group_all=TRUE,
                          dx_groupname="ourdiagnoses",
-                         dx_owner="child")
+                         dx_owner="child") 
 
-str(mydata)
+str(mydata, vec.len = 0)
 
 
 ```
@@ -191,8 +203,8 @@ Finally, it is worth noting that we can create variables pertaining to multiple 
 #First preload the npr data file as described above
 
 npr_full <- preload_npr(
-  npr_data_root_dir = "//tsd-evs/p471/data/durable/data/NPR/processed/",
-  npr_filename = "18_34161_NPR.sav")
+  npr_data_root_dir = "//ess01/P471/data/durable/data/NPR/processed/",
+  npr_filename = "18_34161_NPR_out230920222.sav")
 
 #We'll feed this into the curate_dataset call below, speeding that (and any subsequent dataset curations using NPR data) up considerably
 
@@ -217,7 +229,7 @@ mydata <- curate_dataset(variables_required=list(moba = c("scl_anx_m_3yr","bmi_d
                          dx_owner="child",
                          npr_full=npr_full) 
 
-str(mydata)
+str(mydata, vec.len = 0)
 
 
 ```
@@ -243,7 +255,8 @@ my_long_npr_data <- pivot_curated_npr(mydata)
 
 my_long_npr_data %>% 
   dplyr::filter(!is.na(hc_contact)) %>% 
-  dplyr::select(preg_id, BARN_NR, dx_group,hc_contact, info,value)
+  dplyr::select(preg_id, BARN_NR, dx_group,hc_contact, info,value) %>% 
+  mask_ids() %>%  #We replace the actual IDs here for demo purposes
   head(10)
 
 
@@ -257,6 +270,6 @@ Functions to assist with analysis documentation and reporting are currently in d
 
 * `dataset_report()` which creates an Rmarkdown file for specified output with a summary report of the dataset, including descriptive statistics, psychometric properties of scales and attrition analyses for longitudinal data
 
-* `synthesise_data()` and `simulate_data()` which make and save synthetic or simulated datasets for export with analysis code based on dataset properties and/or structure
+*  `simulate_data()` which makes and saves simulated datasets for export with analysis code based on dataset properties and/or structure
 
 * `dataprep_code()` which produces an R file with the code used to generate your dataset for export

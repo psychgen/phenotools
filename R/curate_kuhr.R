@@ -55,13 +55,14 @@ curate_kuhr <- function(diagnoses,
                         dx_groupname =NULL,
                         dx_owners = c("child"),
                         kuhr_full = NULL,
-                        moba_data_root_dir= "//tsd-evs/p471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
-                        kuhr_data_root_dir= "//tsd-evs/p471/data/durable/data/KUHR/KUHR_csv/",
+                        moba_data_root_dir= "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+                        kuhr_data_root_dir= "//ess01/P471/data/durable/data/KUHR/KUHR_current/DSV files/",
                         kuhr_filenames_override=NULL,
-                        linkage_file_root_dir = "//tsd-evs/p471/data/durable/data/Linkage files/",
-                        kuhr_linkage_filename = "PDB2306_kobling_KUHR.sav",
+                        linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage files/",
+                        kuhr_linkage_filename = "PDB2306_kobling_KUHR_Combined_20220112.sav",
                         PDB="2306",
-                        moba_data_version = 12)
+                        moba_data_version = 12,
+                        ...)
 {
 
 
@@ -79,14 +80,18 @@ curate_kuhr <- function(diagnoses,
     if(!is.null(kuhr_filenames_override)){
       kuhrfile_list <- kuhr_filenames_override
     }else{
-      kuhrfile_list <- list.files(kuhr_data_root_dir)[stringr::str_detect(list.files(kuhr_data_root_dir), "Data_KUHR.csv")]
+      kuhrfile_list <- list.files(kuhr_data_root_dir)[stringr::str_detect(list.files(kuhr_data_root_dir), "Data_KUHR.dsv")]
     }
 
     for(kuhrfile in kuhrfile_list){
 
+      drop_cols <- c("NORAKOKODE","NCRPKODE")
 
       message(paste0("\nReading KUHR data from year: ", stringr::str_sub(kuhrfile,end=4),"..."))
-      tmp <- suppressWarnings(suppressMessages(readr::read_delim(paste0(kuhr_data_root_dir,kuhrfile), delim=";")))
+      tmp <- suppressWarnings(suppressMessages(
+        readr::read_delim(paste0(kuhr_data_root_dir,kuhrfile), delim=";", col_types = readr::cols(.default = "c")))) %>%
+        dplyr::select(-tidyselect::any_of(drop_cols))
+
       problem_rows <- tmp %>% dplyr::slice(readr::problems(tmp)$row) %>%
         dplyr::mutate(source=kuhrfile)
       if(nrow(problem_rows)>0){
@@ -100,7 +105,7 @@ curate_kuhr <- function(diagnoses,
         stop("Functionality to incorporate KUHR data from sources other than primary care is in development;
 currently this function can only run with the primary_care_only argument set to TRUE")
       }
-      problems<- rbind(problems, problem_rows) #1215 misreads out of 20 milion rows - just drop these for now
+      problems<- rbind(problems, problem_rows) #1215 misreads out of 20 million rows - just drop these for now
       kuhrdata<- rbind(kuhrdata, tmp)
 
     }
@@ -133,7 +138,7 @@ currently this function can only run with the primary_care_only argument set to 
                   f_id = dplyr::matches("f_id"),
                   BARN_NR,
                   dx_owner = SUP_Type,
-                  LNr = PASIENTLOPENUMMER)%>%
+                  LNr = PID_NPR_2306)%>%
     dplyr::mutate(f_id = stringr::str_replace_all(f_id, stringr::fixed(" "), ""),
                   m_id = stringr::str_replace_all(m_id, stringr::fixed(" "), ""),
                   dx_owner = tolower(stringr::str_remove(dx_owner, "SU2PT_"))) %>%
@@ -175,19 +180,25 @@ currently this function can only run with the primary_care_only argument set to 
                                         dplyr::left_join(mbrn) %>%
                                         dplyr::left_join(link %>%
                                                            dplyr::filter(dx_owner=="child") %>%
-                                                           dplyr::select(-m_id,-f_id)))
+                                                           dplyr::select(-m_id,-f_id)) %>%
+                                        dplyr::mutate(dx_owner="child")) #Ensures that those without linkage are
+                                                                          #identifiable within a family
 
   kuhr_link_mother <- suppressMessages(sv_info %>%
                                          dplyr::left_join(mbrn) %>%
                                          dplyr::left_join(link %>%
                                                             dplyr::filter(dx_owner=="mother") %>%
-                                                            dplyr::select(-preg_id,-f_id,-BARN_NR)))
+                                                            dplyr::select(-preg_id,-f_id,-BARN_NR)) %>%
+                                         dplyr::mutate(dx_owner="mother")) #Ensures that those without linkage are
+                                                                          #identifiable within a family
 
   kuhr_link_father <- suppressMessages(sv_info %>%
                                          dplyr::left_join(mbrn) %>%
                                          dplyr::left_join(link %>%
                                                             dplyr::filter(dx_owner=="father") %>%
-                                                            dplyr::select(-m_id,-preg_id,-BARN_NR)))
+                                                            dplyr::select(-m_id,-preg_id,-BARN_NR)) %>%
+                                         dplyr::mutate(dx_owner="father")) #Ensures that those without linkage are
+                                                                          #identifiable within a family
 
   kuhr_link_moba <- suppressMessages(kuhr_link_child %>%
                                        dplyr::bind_rows(kuhr_link_mother) %>%
@@ -273,7 +284,7 @@ icd10_to_icpc() for your required codes and supply these as inputs to curate_kuh
 
   process_kuhr <- function (d){
     kuhr_reduced_tmp <- suppressWarnings(suppressMessages(kuhrdata %>%
-                                                            dplyr::filter( stringr::str_detect(DIAGNOSENE ,d))%>%
+                                                            dplyr::filter( stringr::str_detect(DIAGNOSER ,d))%>%
                                                             dplyr::rename(LNr = PASIENTLOPENUMMER) %>%
                                                             dplyr::left_join(kuhr_link_moba %>%
                                                                                dplyr::select(LNr, FAAR,dx_owner) %>%
@@ -281,7 +292,7 @@ icd10_to_icpc() for your required codes and supply these as inputs to curate_kuh
                                                             dplyr::mutate(date = lubridate::round_date(lubridate::parse_date_time(MNED,"ym"),unit="month")) %>%
                                                             tidyr::separate(MNED, into =c("year","month"), sep = "-") %>%
                                                             dplyr::mutate(childage_at_yrs = as.numeric(year)-FAAR ) %>%
-                                                            dplyr::mutate(other_codes= stringr::str_remove_all(DIAGNOSENE, d) ,
+                                                            dplyr::mutate(other_codes= stringr::str_remove_all(DIAGNOSER, d) ,
                                                                           year=as.numeric(year),
                                                                           month=as.numeric(month))%>%
                                                             dplyr::group_by(LNr) %>%
@@ -348,11 +359,11 @@ Resulting variables will be labelled with ", if(!is.null(dx_groupname)){dx_group
 
     for( dx in unique(diagnoses_new$dx_groupname)){
 
-      d <- paste0(diagnoses_new %>% dplyr::filter(dx_groupname==dx) %>% .$diagnoses, collapse = "|")
+      d <- paste0(diagnoses_new %>% dplyr::filter(dx_groupname==dx) %>% .$diagnoses %>% unlist(), collapse = "|")
 
       message(paste0(
         "\nProcessing diagnosis codes ",paste0(diagnoses_new %>%
-                                            dplyr::filter(dx_groupname==dx) %>% .$diagnoses, collapse = ", ")," as a group; resulting variables will be labelled with ", dx,". Other curate_kuhr options are applied as specified or at their defaults (see ?curate_kuhr)."))
+                                            dplyr::filter(dx_groupname==dx) %>% .$diagnoses %>% unlist(), collapse = ", ")," as a group; resulting variables will be labelled with ", dx,". Other curate_kuhr options are applied as specified or at their defaults (see ?curate_kuhr)."))
 
       kuhr_processed_tmp <- process_kuhr(d) %>%
         dplyr::rename_at(dplyr::vars(dplyr::matches("_dx")), ~paste(.,dx,"kuhr",sep="_"))
@@ -364,9 +375,7 @@ Resulting variables will be labelled with ", if(!is.null(dx_groupname)){dx_group
 
     #Tidy up to preserve RAM before potential reshape (if more than one dx_owner)
 
-    if(exists("kuhr_link_moba")){
-      rm(kuhr_link_moba)
-    }
+
 
     if(mem_preserve>0){
       rm(kuhrdata)
@@ -375,6 +384,10 @@ Resulting variables will be labelled with ", if(!is.null(dx_groupname)){dx_group
 
     kuhr_processed <- kuhr_processed %>%
       dplyr::filter(dx_owner %in% dx_owners) %>%
+      dplyr::mutate_at(dplyr::vars(dplyr::contains("received_dx")),
+                       list( ~ dplyr::case_when(!is.na(LNr)&is.na(.) ~ "no",
+                                                  !is.na(LNr)&!is.na(.) ~ "yes",
+                                                  is.na(LNr) ~ .))) %>%
       dplyr::select(-LNr) %>%
       dplyr::mutate(preg_id = as.character(preg_id)) %>%
       dplyr::rename(birth_yr = FAAR)
@@ -395,12 +408,15 @@ will be inflated (some parents appear in multiple rows). For accurate counts, yo
 need to restrict to unique m_id/f_ids.")
     }
 
-    message("\nKUHR data processing complete.")
-
     #String replace commas with | to avoid problems with write.csv
 
-    kuhr_processed <- kuhr_processed %>%
-      dplyr::mutate_if(is.character, list(~stringr::str_replace_all(.,",","|") ))
+    kuhr_processed <-  kuhr_processed %>%
+                            dplyr::mutate_if(is.character, list(~stringr::str_replace_all(.,",","|") ))
+
+    if(exists("kuhr_link_moba")){
+      rm(kuhr_link_moba)
+    }
+message("\nKUHR data processing complete.")
 
     return(kuhr_processed)
 

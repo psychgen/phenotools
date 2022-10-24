@@ -15,13 +15,14 @@ curate_kuhr(
   dx_owners = c("child"),
   kuhr_full = NULL,
  
-    moba_data_root_dir = "//tsd-evs/p471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
-  kuhr_data_root_dir = "//tsd-evs/p471/data/durable/data/KUHR/KUHR_csv/",
+    moba_data_root_dir = "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+  kuhr_data_root_dir = "//ess01/P471/data/durable/data/KUHR/KUHR_current/DSV files/",
   kuhr_filenames_override = NULL,
-  linkage_file_root_dir = "//tsd-evs/p471/data/durable/data/Linkage files/",
-  kuhr_linkage_filename = "PDB2306_kobling_KUHR.sav",
+  linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage files/",
+  kuhr_linkage_filename = "PDB2306_kobling_KUHR_Combined_20220112.sav",
   PDB = "2306",
-  moba_data_version = 12
+  moba_data_version = 12,
+  ...
 )
 }
 \arguments{

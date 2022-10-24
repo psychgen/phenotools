@@ -32,10 +32,12 @@
 #' is for p471)
 #' @param npr_filename What is the name of the NPR file? (default
 #' is for p471)
-#' @param linkage_file_root_dir Where are the linkage files? (default
+#' @param linkage_file_root_dir Where is the linkage file? (default
 #' is for p471)
 #' @param npr_linkage_filename What is the name of the linkage file? (default
-#' is for p471)
+#' is for p471). Required variables are: LNr (link number); M_ID_>PDB< (maternal ID);
+#' F_ID_>PDB< (paternal ID); PREG_ID_>PDB< (preg ID); BARN_NR (child number in pregnancy);
+#' SUP_Type (either MOTHER/FATHER/CHILD)
 #' @param PDB What is the PDB code for your TSD project? (default
 #' is for p471)
 #' @param moba_data_version What version is the MoBa data you are linking to? Defaults to
@@ -53,13 +55,14 @@ curate_npr <- function(diagnoses,
                        dx_owners = c("child"),
                        npr_full = NULL,
                        npr_preprocessed = NULL,
-                       moba_data_root_dir= "//tsd-evs/p471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
-                       npr_data_root_dir= "//tsd-evs/p471/data/durable/data/NPR/processed/",
+                       moba_data_root_dir= "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+                       npr_data_root_dir= "//ess01/P471/data/durable/data/NPR/processed/",
                        npr_filename="18_34161_NPR.sav",
-                       linkage_file_root_dir = "//tsd-evs/p471/data/durable/data/Linkage files/",
+                       linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage files/",
                        npr_linkage_filename = "PDB2306_kobling_NPR_mor_far_barn.sav",
                        PDB="2306",
-                       moba_data_version = 12)
+                       moba_data_version = 12,
+                       ...)
 {
 
   ## LOADING FULL NPR DATASET INTO MEMORY
@@ -87,12 +90,17 @@ curate_npr <- function(diagnoses,
       dplyr::select(preg_id, BARN_NR, m_id,f_id,FAAR, dx_owner,LNr)
 
     npr_full <-npr_preprocessed%>%
-      dplyr::mutate_at(dplyr::vars(starts_with("tilst|NCMP|NCSP")), list(~stringr::str_remove_all(.,"[[:punct:]]"),
+      dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst|NCMP|NCSP")), list(~stringr::str_remove_all(.,"[[:punct:]]"),
                                                                          ~stringr::str_trim(.,"both"),
                                                                          ~stringr::str_replace_all(., stringr::fixed(" "), ""))) %>% #Remove non alphanumeric values in all tilst- variables
-      dplyr::mutate_at(dplyr::vars(starts_with("tilst")), list(~stringr::str_sub(.,end=4))) %>%
-      dplyr::mutate_at(dplyr::vars(starts_with("tilst|NCMP|NCSP")), dplyr::na_if, "") %>%
-      dplyr::mutate_at(dplyr::vars(dplyr::matches("Dato")), as.Date.character )
+      dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst")), list(~stringr::str_sub(.,end=4))) %>%
+      dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst|NCMP|NCSP")), dplyr::na_if, "") %>%
+      dplyr::mutate_at(dplyr::vars(dplyr::matches("Dato")), as.Date.character ) %>%
+      dplyr::rename("LNr"= tidyr::ends_with("Nr"),
+                    "omsorgsniva3" = dplyr::matches("omsorgsniva$"),
+                    "henvTypeVurd" = dplyr::matches("henvType$")) %>%
+      dplyr::mutate(NCMP_x = NA, # Dummy cols in case these code cols are not included
+                    NCSP_x = NA) # Dummy cols in case these code cols are not included
     mem_preserve<-1
   }else{
 
@@ -107,12 +115,17 @@ curate_npr <- function(diagnoses,
       mem_preserve <-1
 
       npr_full <- haven::read_spss(paste0(npr_data_root_dir,npr_filename)) %>%
-        dplyr::mutate_at(dplyr::vars(starts_with("tilst|NCMP|NCSP")), list(~stringr::str_remove_all(.,"[[:punct:]]"),
+        dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst|NCMP|NCSP")), list(~stringr::str_remove_all(.,"[[:punct:]]"),
                                                                            ~stringr::str_trim(.,"both"),
                                                                            ~stringr::str_replace_all(., stringr::fixed(" "), ""))) %>% #Remove non alphanumeric values in all tilst- variables
-        dplyr::mutate_at(dplyr::vars(starts_with("tilst")), list(~stringr::str_sub(.,end=4))) %>%
+        dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst")), list(~stringr::str_sub(.,end=4))) %>%
         dplyr::mutate_if(is.character, dplyr::na_if, "") %>%
-        dplyr::mutate_at(dplyr::vars(dplyr::matches("Dato")), as.Date.character )
+        dplyr::mutate_at(dplyr::vars(dplyr::matches("Dato")), as.Date.character )%>%
+        dplyr::rename("LNr"= tidyr::ends_with("Nr"),
+                      "omsorgsniva3" = dplyr::matches("omsorgsniva$"),
+                      "henvTypeVurd" = dplyr::matches("henvType$")) %>%
+        dplyr::mutate(NCMP_x = NA, # Dummy cols in case these code cols are not included
+                      NCSP_x = NA) # Dummy cols in case these code cols are not included
 
     }
     ############################
@@ -169,19 +182,24 @@ curate_npr <- function(diagnoses,
                                          dplyr::left_join(mbrn) %>%
                                          dplyr::left_join(link %>%
                                                             dplyr::filter(dx_owner=="child") %>%
-                                                            dplyr::select(-m_id,-f_id)))
+                                                            dplyr::select(-m_id,-f_id)) %>%
+                                         dplyr::mutate(dx_owner="child")) #Ensures that those without linkage are
+                                                                           #identifiable within a family
 
     npr_link_mother <- suppressMessages(sv_info %>%
                                           dplyr::left_join(mbrn) %>%
                                           dplyr::left_join(link %>%
                                                              dplyr::filter(dx_owner=="mother") %>%
-                                                             dplyr::select(-preg_id,-f_id,-BARN_NR)))
-
+                                                             dplyr::select(-preg_id,-f_id,-BARN_NR)) %>%
+                                          dplyr::mutate(dx_owner="mother")) #Ensures that those without linkage are
+                                                                             #identifiable within a family
     npr_link_father <- suppressMessages(sv_info %>%
                                           dplyr::left_join(mbrn) %>%
                                           dplyr::left_join(link %>%
                                                              dplyr::filter(dx_owner=="father") %>%
-                                                             dplyr::select(-m_id,-preg_id,-BARN_NR)))
+                                                             dplyr::select(-m_id,-preg_id,-BARN_NR)) %>%
+                                          dplyr::mutate(dx_owner="father")) #Ensures that those without linkage are
+                                                                             #identifiable within a family
 
     npr_link_moba <- suppressMessages(npr_link_child %>%
                                         dplyr::bind_rows(npr_link_mother) %>%
@@ -216,7 +234,7 @@ curate_npr <- function(diagnoses,
       dplyr::as_tibble() %>%
       tidyr::separate(value, into = c("dx_groupname","diagnoses"), sep="=") %>%
       dplyr::mutate_all(stringr::str_trim) %>%
-      dplyr::mutate(diagnoses = strsplit(toupper(diagnoses),","))
+      dplyr::mutate(diagnoses = strsplit(stringr::str_remove_all(toupper(diagnoses)," "),","))
 
 
   }else {
@@ -226,7 +244,7 @@ curate_npr <- function(diagnoses,
   if(recursive==TRUE){
 
     if(length(diagnoses_std)>0){
-      diag_std_tmp <- npr %>%
+      diag_std_tmp <- phenotools::npr %>%
         dplyr::filter(stringr::str_detect(level3,paste(diagnoses_std, collapse = "|"))|
                         stringr::str_detect(level2,paste(diagnoses_std, collapse = "|"))|
                         stringr::str_detect(chapter,paste(diagnoses_std, collapse = "|"))) %>%
@@ -243,7 +261,7 @@ curate_npr <- function(diagnoses,
 
        for(i in 1:nrow(diagnoses_new)){
 
-       diag_new_tmp_tmp <- npr %>%
+       diag_new_tmp_tmp <- phenotools::npr %>%
         dplyr::filter(stringr::str_detect(level3,paste(diagnoses_new$diagnoses[[i]], collapse = "|"))|
                         stringr::str_detect(level2,paste(diagnoses_new$diagnoses[[i]], collapse = "|"))|
                         stringr::str_detect(chapter,paste(diagnoses_new$diagnoses[[i]], collapse = "|"))) %>%
@@ -258,7 +276,7 @@ curate_npr <- function(diagnoses,
   } else{
 
     if(length(diagnoses_std)>0){
-    diag_std_tmp <- npr %>%
+    diag_std_tmp <- phenotools::npr %>%
       dplyr::mutate(diag=ifelse(!is.na(level3), level3,
                                 ifelse(!is.na(level2),level2,chapter))) %>%
       dplyr::filter(diag %in% diagnoses & !diag %in% exclusions)
@@ -270,7 +288,7 @@ curate_npr <- function(diagnoses,
       diag_new_tmp <- data.frame()
       for(i in 1:nrow(diagnoses_new)){
 
-      diag_new_tmp_tmp <- npr %>%
+      diag_new_tmp_tmp <- phenotools::npr %>%
         dplyr::mutate(diag=ifelse(!is.na(level3), level3,
                                   ifelse(!is.na(level2),level2,chapter))) %>%
         dplyr::filter(diag %in% diagnoses_new$diagnoses[[i]]& !diag %in% exclusions) %>%
@@ -303,7 +321,7 @@ curate_npr <- function(diagnoses,
 
   process_npr <- function (d){
     npr_reduced_tmp <- suppressMessages(npr_full %>%
-                                          dplyr::filter_at(dplyr::vars(starts_with("tilst")), dplyr::any_vars( stringr::str_detect(. ,d))) %>%
+                                          dplyr::filter_at(dplyr::vars(tidyr::starts_with("tilst")), dplyr::any_vars( stringr::str_detect(. ,d))) %>%
                                           dplyr::left_join(npr_link_moba %>%
                                                              dplyr::select(LNr, FAAR,dx_owner) %>%
                                                              dplyr::distinct())) %>%
@@ -322,7 +340,7 @@ curate_npr <- function(diagnoses,
                                                        henvTypeVurd==6 ~ "Pregnancy",
                                                        henvTypeVurd==7 ~ "Care, accommodation or other")),
                     childage_at_yrs = aar - FAAR) %>%
-      dplyr::mutate_at(dplyr::vars(starts_with("tilst")), dplyr::na_if, "") %>%
+      dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst")), dplyr::na_if, "") %>%
       tidyr::unite(other_codes, dplyr::starts_with("tilst"), sep=",", na.rm = TRUE) %>%
       dplyr::mutate(other_codes, stringr::str_remove_all(other_codes, d)) %>%
       tidyr::unite(ncmp_codes, dplyr::starts_with("ncmp"), sep=",", na.rm = TRUE) %>%
@@ -410,9 +428,6 @@ Resulting variables will be labelled with ", if(!is.null(dx_groupname)){dx_group
 
   #Tidy up to preserve RAM berfore potential reshape (if more than one dx_owner)
 
-  if(exists("npr_link_moba")){
-  rm(npr_link_moba)
-  }
 
   if(mem_preserve>0){
     rm(npr_full)
@@ -421,6 +436,10 @@ Resulting variables will be labelled with ", if(!is.null(dx_groupname)){dx_group
 
   npr_processed <- npr_processed %>%
     dplyr::filter(dx_owner %in% dx_owners) %>%
+    dplyr::mutate_at(dplyr::vars(dplyr::contains("received_dx")),
+                     list( ~ dplyr::case_when(!is.na(LNr)&is.na(.) ~ "no",
+                                                  !is.na(LNr)&!is.na(.) ~ "yes",
+                                                  is.na(LNr) ~ .))) %>%
     dplyr::select(-LNr) %>%
     dplyr::mutate(preg_id = as.character(preg_id)) %>%
     dplyr::rename(birth_yr = FAAR)
@@ -445,9 +464,13 @@ need to restrict to unique m_id/f_ids.")
 
   #String replace commas with | to avoid problems with write.csv
 
-  npr_processed <- npr_processed %>%
-    dplyr::mutate_if(is.character, list(~stringr::str_replace_all(.,",","|") ))
+  npr_processed <-  npr_processed %>%
+                          dplyr::mutate_if(is.character, list(~stringr::str_replace_all(.,",","|") ))
 
+
+  if(exists("npr_link_moba")){
+    rm(npr_link_moba)
+  }
 
   message("\nNPR data processing complete.")
   return(npr_processed)

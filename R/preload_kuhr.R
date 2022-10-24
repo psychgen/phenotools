@@ -19,7 +19,7 @@
 #' @importFrom lubridate "%--%"
 
 
-preload_kuhr <- function(kuhr_data_root_dir="//tsd-evs/p471/data/durable/data/KUHR/processed/",
+preload_kuhr <- function(kuhr_data_root_dir="//ess01/P471/data/durable/data/KUHR/processed/",
                          kuhr_filenames_override = NULL,
                          primary_care_only ="TRUE")
 {

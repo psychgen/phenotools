@@ -14,13 +14,14 @@ curate_npr(
   npr_full = NULL,
   npr_preprocessed = NULL,
  
-    moba_data_root_dir = "//tsd-evs/p471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
-  npr_data_root_dir = "//tsd-evs/p471/data/durable/data/NPR/processed/",
+    moba_data_root_dir = "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+  npr_data_root_dir = "//ess01/P471/data/durable/data/NPR/processed/",
   npr_filename = "18_34161_NPR.sav",
-  linkage_file_root_dir = "//tsd-evs/p471/data/durable/data/Linkage files/",
+  linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage files/",
   npr_linkage_filename = "PDB2306_kobling_NPR_mor_far_barn.sav",
   PDB = "2306",
-  moba_data_version = 12
+  moba_data_version = 12,
+  ...
 )
 }
 \arguments{
@@ -61,11 +62,13 @@ is for p471)}
 \item{npr_filename}{What is the name of the NPR file? (default
 is for p471)}
 
-\item{linkage_file_root_dir}{Where are the linkage files? (default
+\item{linkage_file_root_dir}{Where is the linkage file? (default
 is for p471)}
 
 \item{npr_linkage_filename}{What is the name of the linkage file? (default
-is for p471)}
+is for p471). Required variables are: LNr (link number); M_ID_>PDB< (maternal ID);
+F_ID_>PDB< (paternal ID); PREG_ID_>PDB< (preg ID); BARN_NR (child number in pregnancy);
+SUP_Type (either MOTHER/FATHER/CHILD)}
 
 \item{PDB}{What is the PDB code for your TSD project? (default
 is for p471)}

@@ -17,13 +17,13 @@ available_variables <- function(source=c("moba","npr","kuhr"))
 {
   all_avail <- data.frame()
   if(any(source %in%"moba")){
-    temp_moba <- moba %>% dplyr::select(measure,subscale,questionnaire,var_name) %>%
+    temp_moba <- phenotools::moba %>% dplyr::select(measure,subscale,questionnaire,var_name) %>%
       dplyr::distinct() %>%
       dplyr::mutate(source="moba")
     all_avail <- rbind(all_avail,temp_moba)
   }
   if(any(source %in%"npr")){
-    temp_npr <- npr  %>%
+    temp_npr <- phenotools::npr  %>%
       dplyr::mutate(var_name=ifelse(!is.na(level3), level3,
                                     ifelse(!is.na(level2),level2,chapter))) %>%
       dplyr::distinct() %>%
@@ -35,7 +35,7 @@ available_variables <- function(source=c("moba","npr","kuhr"))
     all_avail <- rbind(all_avail,temp_npr)
   }
   if(any(source %in%"kuhr")){
-        temp_kuhr<- kuhr  %>%
+        temp_kuhr<- phenotools::kuhr  %>%
       dplyr::rename(var_name = Code) %>%
       dplyr::mutate(source="kuhr",
                     measure = paste0("ICPC code for: ", preferred),

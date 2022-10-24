@@ -4,7 +4,18 @@
 #' component of phenotools, producing analysis-ready datasets with
 #' specified variables from MoBa and other registry sources
 #'
-#' Detailed description...
+#' This function fulfills the main purpose of the phenotools package by taking
+#' details of variables you want in your analytic dataset, retrieving and processing
+#' the raw data needed to make those variables, and returning them to you in either a
+#' dataframe or list of dataframes. For the function to work, you need to be able
+#' to direct it to the local directory that is home to the raw (i.e., as received)
+#' MoBa phenotypic data files >=v11 in SPSS format. Remember, datasets can only be
+#' curated on the basis of variables that exist in your raw MoBa data files. If something
+#' is not working, it is worth checking MoBa documentation for item codes and verifying that
+#' they exist in your raw data.
+#'
+#' For a full introduction to the \code{curate_dataset} function, see the package
+#' vignette (\code{vignette("phenotools")}).
 #'
 #' @param variables_required What variables are required? See
 #' \code{available_variables} for a valid inputs
@@ -18,7 +29,7 @@
 #' @param consistent_items Only use wave-to-wave consistent items
 #' for variables that are measured longitudinally?
 #' @param transformations Not yet implemented
-#' @param log filepath for code_preparation log
+#' @param log filepath for code_preparation log - not yet implemented
 #' @param out_format should output be a "list" or "merged_df"; defaults to "list"
 #' @param override_filenames questionnaire filenames are built by combining your
 #' inputs on PDB, moba_data_version, and the standard codes for each questionnaire
@@ -30,10 +41,34 @@
 #' and ?curate_npr
 #' @export
 #' @importFrom dplyr "%>%"
+#'
+#'
+#' @examples
+#'
+#' # Curate a scale- and item-level dataet from MoBa only, returned as a list
+#'
+#' mydata <- curate_dataset(variables_required=c("scl_anx_m_3yr","bmi_derived_f_q1"),return_items = T, out_format="list")
+#'
+#' # Curate a scale- and item-level dataet from MoBa only, returned as a merged dataframe
+#'
+#' mydata <- curate_dataset(variables_required=c("scl_anx_m_3yr","bmi_derived_f_q1"),return_items = T, out_format="merged_df")
+#'
+#' # Curate a dataset from multiple sources
+#'
+#' mydata <- curate_dataset(variables_required=list(moba = c("scl_anx_m_3yr","bmi_derived_f_q1"),
+#' npr = random5nprcodes),
+#' return_items = T, out_format="merged_df",
+#' exclusions=NULL,
+#' recursive=TRUE,
+#' group_all=TRUE,
+#' dx_groupname="ourdiagnoses",
+#' dx_owner="child")
+#'
+#' For more examples, see the package vignette (\code{vignette("phenotools")}).
 
 
 curate_dataset <- function(variables_required,
-                           moba_data_root_dir="//tsd-evs/p471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+                           moba_data_root_dir="//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
                            PDB="2306",
                            moba_data_version = 12,
                            completion_threshold=0.5,
@@ -45,6 +80,9 @@ curate_dataset <- function(variables_required,
                            override_filenames = NULL,
                            ...){
 
+  ################
+  #LOGGING FUNCTIONS
+  ################
   if(!is.null(log)){
     #Check for logr
     if(! "logr" %in% installed.packages()[,"Package"]){
@@ -64,8 +102,11 @@ Either install it or re-run with log=NULL.")
 
   }
 
+  ################
+  #INPUT CHECKING
+  ################
+
   message("Checking inputs...")
-  #######################
   ##Warn if MoBa version is not 12
   if(moba_data_version!=12){
     warning("MoBa variables have been curated and QCd using v12 data. Coding differences in different versions may mean that some variables are computed incorrectly. It is recommended that you use phenotools with v12 MoBa data. If you really do need to use alternative versions, check your variables carefully, using return_items=TRUE to get raw and coded items for all scales, and checking that these appear to correspond correctly.")
@@ -79,7 +120,7 @@ Either install it or re-run with log=NULL.")
   ## Function to find MoBa items
 
   moba_item_finder <- function(var){
-    res<- lapply(moba_varnames, function(ch) grep(paste0("\\b",var,"\\b"), ch))
+    res<- lapply(phenotools::moba_varnames, function(ch) grep(paste0("\\b",var,"\\b"), ch))
     res2 <- sapply(res, function(x) length(x) > 0)
     if(!any(res2)==TRUE){
       return(NA)
@@ -91,6 +132,8 @@ Either install it or re-run with log=NULL.")
   ## If variables_required is not a named list, can only work with MoBa variables
 
   ## Process if not list
+
+
   if(!is.list(variables_required)){
 
         ##Pull out any "new" variables
@@ -116,7 +159,7 @@ Either install it or re-run with log=NULL.")
 If these come from other sources, please convert your input for the variables_required argument into a named
 list and re-run (see vignette(\"phenotools\") for details).
 
-If you think this variable should be available within MoBa data, please contact lauriejhannigan@gmail.com.
+If you think this variable is available within your source MoBa datafiles and should be accessible to phenotools, please contact lauriejhannigan@gmail.com.
 For a list of valid pre-processed variable names run avaliable_variables(source = \"moba\"), or check the MoBa wiki for valid item codes."))
 
       }
@@ -135,7 +178,8 @@ For a list of valid pre-processed variable names run avaliable_variables(source 
     }
 
   }else{
-  ## Process if list
+
+    ## Process if list
 
     #check that list elements are named
     if(is.null(names(variables_required))){
@@ -229,9 +273,9 @@ For a list of valid pre-processed variable names run avaliable_variables(), or c
 
 
   all_data_combined <- list()
-  #############
-  #MOBA
-  ###################################################################################
+  ################
+  #PROCESS: MOBA
+  ################
   if(any(sources$source == "moba")){
 
     message("\nProcessing MoBa variables...")
@@ -241,7 +285,7 @@ For a list of valid pre-processed variable names run avaliable_variables(), or c
         suppressWarnings(
           reqd_vars %>%
             dplyr::filter(source =="moba") %>%
-            dplyr::left_join(moba) %>%
+            dplyr::left_join(phenotools::moba) %>%
             dplyr::mutate(items=ifelse(measure=="single_item",var_name,items),
                           helper=ifelse(measure=="single_item","single_item",helper))))
 
@@ -250,6 +294,23 @@ For a list of valid pre-processed variable names run avaliable_variables(), or c
       moba_vars <- moba_vars %>%
         dplyr::mutate(items=ifelse(is.na(consistent),items,consistent ))
     }
+
+    ##Warn mchat
+    if(any(stringr::str_detect(moba_vars$var_name, "mchat")) & completion_threshold<1){
+      message(paste0("\nThe M-CHAT scale variables are designed to be used when all items are non-missing,
+so mean imputation (the default when completion_threshold<1, may not be advisable.
+Consider re-running with completion_threshold=1 for these variables: ", paste0(moba_vars %>%
+                                                                                 dplyr::filter(stringr::str_detect(var_name, "mchat")) %>% .$var_name, collapse= ", "), ".\n") )}
+
+    ##Warn asq/cdq 5 yrs
+    if(any(stringr::str_detect(moba_vars$var_name, "asq_mot_c_5yr|cdi_mot_c_5yr")) & completion_threshold<1){
+      message(paste0("\nBe aware that asq_mot_c_5yr and cdi_mot_c_5yr ARE IDENTICAL AND SHOULD NOT BE TREATED AS SEPARATE VARIABLES.
+Details: Motor items at 5 years come from the Child Development Inventory, not the ASQ (as listed in
+the MoBa instrument synthesis).As such, they have a different response set (Yes, No), and scores on
+this variable are not comparable to scores on the ASQ in raw form. Phenotools allows the scale to be
+called by either the asq_ or cdi_ prefix for consistency with both MoBa documentation and the true
+source of the items.") )}
+
 
     ##Make up lookup table of filepaths, comprising defaults and any overrides
 
@@ -320,8 +381,6 @@ in override_filenames or else forgotten the '.sav' file extension.")
       dplyr::mutate_if(is.character, list(~dplyr::na_if(.,"")))
 
     #Get item-level datasets and combine
-
-
 
     for(q in unique(moba_vars$questionnaire)){
 
@@ -408,7 +467,9 @@ in override_filenames or else forgotten the '.sav' file extension.")
       dplyr::select(preg_id:birth_yr)
 
     if(nrow(moba_other_vars)>0){
-      message("\nProcessing non-scale MoBa vars. These are: \n\n",paste0(c(moba_other_vars$var_name), collapse="", sep="\n"))
+      message("\nProcessing non-scale (or non-standard) MoBa vars. These are: \n\n",paste0(c(moba_other_vars$var_name), collapse="", sep="\n"))
+
+
 
 
       for(helpfun in unique(moba_other_vars$helper)){
@@ -416,14 +477,16 @@ in override_filenames or else forgotten the '.sav' file extension.")
         f <- match.fun(helpfun)
         moba_other_temp <- f(moba_other_vars,
                              moba_other_vars_long,
-                             moba_data)
+                             moba_data,
+                             return_items,
+                             completion_threshold)
         moba_other_data <-
           suppressMessages(
             suppressWarnings(
               moba_other_data %>%
                 dplyr::left_join(moba_other_temp)))
       }
-      message("\nProcessing of non-scale MoBa variables is complete.")
+      message("\nProcessing of non-scale (or non-standard) MoBa variables is complete.")
     }
 
 
@@ -435,11 +498,12 @@ in override_filenames or else forgotten the '.sav' file extension.")
         suppressMessages(
           suppressWarnings(list( scales =
                                    moba_scales_items[["scales"]] %>%
-                                   dplyr::left_join(moba_other_data),
+                                   dplyr::left_join(moba_other_data%>%
+                                                      dplyr::select(-dplyr::matches("_raw|_coded"))),
                                  items =
                                    moba_scales_items[["items"]] %>%
                                    dplyr::left_join(moba_other_data %>%
-                                                      dplyr::select(preg_id,m_id,f_id,BARN_NR,birth_yr,dplyr::matches("_raw"))))))
+                                                      dplyr::select(preg_id,m_id,f_id,BARN_NR,birth_yr,dplyr::matches("_raw|_coded"))))))
       if(out_format == "list"){
 
       message(

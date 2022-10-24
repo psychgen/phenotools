@@ -5,7 +5,7 @@
 \title{Pre-load NPR data}
 \usage{
 preload_npr(
-  npr_data_root_dir = "//tsd-evs/p471/data/durable/data/NPR/processed/",
+  npr_data_root_dir = "//ess01/P471/data/durable/data/NPR/processed/",
   npr_filename = "18_34161_NPR.sav"
 )
 }

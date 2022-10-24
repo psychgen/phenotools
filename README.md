@@ -9,8 +9,9 @@ The goal of the **phenotools** package is to facilitate efficient and
 reproducible use of phenotypic data from MoBa and linked registry
 sources in the TSD environment.
 
-Please contact <Laurie.Hannigan@fhi.no>, <Alexandra.Havdahl@fhi.no>, or 
-<PsychGen.Research@gmail.com> with bugs, feedback, or development ideas.
+Please contact [Laurie
+Hannigan](mailto:laurie.hannigan@bristol.ac.uk;laurie.hannigan@lds.no)
+with bugs, feedback, or development ideas.
 
  
 
@@ -22,11 +23,11 @@ environment, in which MoBa data are accessed for analyses. As such, you
 can’t install the package directly from github. Instead, you should
 download the binary for the latest working version from
 [here](https://osf.io/6g8bj/files/), import to a sensible location in
-your project in TSD and install in R as follows, amending the path
-appropriately:
+your project in TSD and install in R as follows, amending the path and
+package version appropriately:
 
 ``` r
-install.packages("//tsd-evs/p471/data/durable/common/software/phenotools_0.2.7.zip", 
+install.packages("//ess01/P471/data/durable/common/software/phenotools_x.y.z.zip", 
                  repos=NULL,
                  type = "binary")
 ```
@@ -37,7 +38,7 @@ copy, i.e.,
 
 ``` r
 install.packages('dplyr',
-                 repos = "file://tsd-evs/shared/R/cran")
+                 repos = "file://ess01/shared/R/cran")
 ```
 
 Otherwise, you will need to download the binaries for those packages and
@@ -55,8 +56,10 @@ respective areas of data preparation, and analysis documentation and
 reporting.
 
 <center>
+
 ![Phenotools in TSD reproducible
-workflow.](inst/rstudio/templates/phenotools_workflow.jpg "fig:")
+workflow.](inst/rstudio/templates/phenotools_workflow.jpg)
+
 </center>
 
 These functions are outlined below. However, to make full usage of the
@@ -66,7 +69,7 @@ analytic project with a pre-defined structure using the
 
 ``` r
 initialise_project(path="C:/Users/p471-lauriejh/newproject",
-                   template_filepath="//tsd-evs/p471/data/durable/common/new_project_template/.")
+                   template_filepath="//ess01/P471/data/durable/common/new_project_template/.")
 #> Initialising...
 #> 
 #> Project initialised successfully. Open via Rstudio>File>Open project...

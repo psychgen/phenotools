@@ -4,7 +4,7 @@ library(usethis)
 
 # Read in from MoBa spreadsheet and filter only complete entries
 
-moba <- read_excel("//tsd-evs/p471/data/durable/common/phenotools_pkg/data/moba_pheno_metadata_safe.xlsx")%>%
+moba <- read_excel("//ess01/P471/data/durable/common/phenotools_pkg/data/moba_pheno_metadata_safe.xlsx")%>%
   filter(complete=="y", safe=="y") %>%
   mutate_all( list(~str_remove_all(.,"\""))) %>%
   mutate_at(c("items","consistent","reversed"), ~str_remove_all(.," ")) %>%
@@ -14,21 +14,22 @@ use_data(moba, overwrite=TRUE)
 
 # Read in NPR codes
 
-npr <-readxl::read_excel("//tsd-evs/p471/data/durable/common/phenotools_pkg/data/ICD10_F_NPR_list_250321.xlsx",col_names = T)
-
+npr_f <-readxl::read_excel("//ess01/P471/data/durable/common/phenotools_pkg/data/ICD10_F_NPR_list_250321.xlsx",col_names = T)
+npr_other <-readxl::read_excel("//ess01/P471/data/durable/common/phenotools_pkg/data/ICD10_other_NPR_list_150322.xlsx",col_names = T)
+npr <- npr_f %>%  bind_rows(npr_other)
 use_data(npr, overwrite = TRUE)
 
 
 # Read in KUHR codes
 
-kuhr <-readxl::read_excel("//tsd-evs/p471/data/durable/common/phenotools_pkg/data/icpc_2e_v7.xlsx",col_names = T)
+kuhr <-readxl::read_excel("//ess01/P471/data/durable/common/phenotools_pkg/data/icpc_2e_v7.xlsx",col_names = T)
 
 use_data(kuhr, overwrite = TRUE)
 
 # Read all moba questionnaires and make a list of variables names
 
 make_moba_filepath <- function(x,
-                               moba_data_root_dir="//tsd-evs/p471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+                               moba_data_root_dir="//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
                                PDB="2306",
                                moba_data_version = 12,
                                name=NULL){

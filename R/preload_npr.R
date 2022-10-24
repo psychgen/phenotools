@@ -19,7 +19,7 @@
 #' @importFrom lubridate "%--%"
 
 
-preload_npr <- function(npr_data_root_dir="//tsd-evs/p471/data/durable/data/NPR/processed/",
+preload_npr <- function(npr_data_root_dir="//ess01/P471/data/durable/data/NPR/processed/",
                         npr_filename="18_34161_NPR.sav")
 {
 
@@ -27,12 +27,17 @@ preload_npr <- function(npr_data_root_dir="//tsd-evs/p471/data/durable/data/NPR/
     "\n\nReading in NPR data file (this is a large file so expect a wait of >2 mins)...")
 
   npr_full <- haven::read_spss(paste0(npr_data_root_dir,npr_filename)) %>%
-    dplyr::mutate_at(dplyr::vars(starts_with("tilst|NCMP|NCSP")), list(~stringr::str_remove_all(.,"[[:punct:]]"),
-                                                                       ~stringr::str_trim(.,"both"),
-                                                                       ~stringr::str_replace_all(., stringr::fixed(" "), ""))) %>% #Remove non alphanumeric values in all tilst- variables
-    dplyr::mutate_at(dplyr::vars(starts_with("tilst")), list(~stringr::str_sub(.,end=4))) %>%
+    dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst|NCMP|NCSP")), list(~stringr::str_remove_all(.,"[[:punct:]]"),
+                                                                              ~stringr::str_trim(.,"both"),
+                                                                              ~stringr::str_replace_all(., stringr::fixed(" "), ""))) %>% #Remove non alphanumeric values in all tilst- variables
+    dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst")), list(~stringr::str_sub(.,end=4))) %>%
     dplyr::mutate_if(is.character, dplyr::na_if, "") %>%
-    dplyr::mutate_at(dplyr::vars(dplyr::matches("Dato")), as.Date.character )
+    dplyr::mutate_at(dplyr::vars(dplyr::matches("Dato")), as.Date.character )%>%
+    dplyr::rename("LNr"= tidyr::ends_with("Nr"),
+                  "omsorgsniva3" = dplyr::matches("omsorgsniva$"),
+                  "henvTypeVurd" = dplyr::matches("henvType$")) %>%
+    dplyr::mutate(NCMP_x = NA, # Dummy cols in case these code cols are not included
+                  NCSP_x = NA) # Dummy cols in case these code cols are not included
 
   message(
 "\nNPR pre-load complete. You can now run curate_dataset with the object in which
