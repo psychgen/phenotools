@@ -71,14 +71,17 @@ mydata <- curate_dataset(variables_required="scl_anx_m_3yr",
                          completion_threshold=0.5,
                          return_items=FALSE,
                          consistent_items=FALSE,
-                         out_format="merged_df") %>% 
+                         out_format="merged_df",
+                         override_filenames = c("SV_INFO = PDB2306_SV_INFO_v12.sav", "MBRN = PDB2306_MBRN_541_v12.sav")) %>% 
   mask_ids() #We replace the actual IDs here for demo purposes
 
 head(mydata) 
 ```
 
 
-Other important inputs here are the root directory of the MoBa phenotypic data (SPSS format) and PDB code for the project you are working in. Both default to the correct values for the p471 TSD project.
+Other important inputs here are the root directory of the MoBa phenotypic data (SPSS format) and PDB code for the project you are working in. Both default to the correct values for the p471 TSD project. 
+
+Note that you can override the expected filenames for all of the MoBa questionnaire files using the override_filenames option, plus the MBRN and SV_INFO files mentioned in the default input for that option. These two files are mentioned in the input above as a reminder than they will be implicitly accessed by the function no matter what variables you request (and as such, if the MoBa files in your project are named differently than  "PDB>PDB<_>code<_v>moba_data_version<.sav", you will need to provide correct filenames for them - as well as any questionnaires from which variables are to be sourced - in order for the function to run). 
 
 Likely, you will want a dataset with multiple phenotypes; `variables_required` needs the var_names for your variables as a concatenated string:
 
@@ -142,17 +145,15 @@ suppressMessages(library(dplyr))
 set.seed(8893)
 
 #Randomly select some available NPR codes
-random5nprcodes <- suppressMessages(available_variables(source = "npr") %>% 
-  dplyr::slice_sample(n=5) %>% 
-  .$var_name)
-
-print(random5nprcodes)
+nprcodes <- c("F41","F84","F90")
 
 #Add the selected npr codes to the curate_dataset call (as 'variables_required'), changing nothing else:
 mydata <- curate_dataset(variables_required=list(moba = c("scl_anx_m_3yr","bmi_derived_f_q1"),
-                                                 npr = random5nprcodes),
+                                                 npr = nprcodes),
                          return_items = T, 
-                         out_format="list") 
+                         out_format="list",
+                         npr_data_root_dir = "//ess01/P471/data/durable/data/NPR/processed/",
+                         npr_filename = "18_34161_NPR.sav") 
 
 ```
 
@@ -173,7 +174,7 @@ names(mynprdata)
 
 This works - in that we get an NPR dataframe returned with a set of variables (see `?curate_npr` for how to interpret these) corresponding to each of our codes - but we get a warning about the importance of the `curate_npr` defaults. 
 
-After checking the help page, we can add these arguments to the `curate_dataset` call to avoid the warning. In this example, we also modify them, now imagining a scenario where our 5 random NPR codes are representative of a single group of diagnoses that is meaningful for our analyses. To do this, we set `group_all = TRUE` and `dx_groupname="ourdiagnoses"`. We will also ask for `output="merged_df"`: 
+After checking the help page, we can add these arguments to the `curate_dataset` call to avoid the warning. In this example, we also modify them, now imagining a scenario where our individual NPR codes are representative of a single group of diagnoses that is meaningful for our analyses. To do this, we set `group_all = TRUE` and `dx_groupname="ourdiagnoses"`. We will also ask for `output="merged_df"`: 
 
 
 ```{r curate5, echo = T}
@@ -181,7 +182,7 @@ After checking the help page, we can add these arguments to the `curate_dataset`
 
 #Add the selected npr codes to the curate_dataset call (as 'variables_required'), with arguments from curate_npr specified:
 mydata <- curate_dataset(variables_required=list(moba = c("scl_anx_m_3yr","bmi_derived_f_q1"),
-                                                 npr = random5nprcodes),
+                                                 npr = nprcodes),
                          return_items = T, out_format="merged_df",
                          exclusions=NULL, 
                          recursive=TRUE,
@@ -196,7 +197,7 @@ str(mydata, vec.len = 0)
 
 The registry files are often large, so if you are curating multiple datasets, or using trial-and-error to build your curation, you might get fed up waiting for them to load every time. If so, you have the option to use the `preload_>source<` functions (e.g., `preload_npr`) and then feed the result of that into your curate calls. We'll do that in the example below.
 
-Finally, it is worth noting that we can create variables pertaining to multiple different groups of NPR diagnoses in one go by adding them in a single string in `variables_required` with the format `r paste0("ourdiagnoses = ",paste0(random5nprcodes,collapse=",")) `, as shown below:
+Finally, it is worth noting that we can create variables pertaining to multiple different groups of NPR diagnoses in one go by adding them in a single string in `variables_required` with the format `r paste0("ourdiagnoses = ",paste0(nprcodes,collapse=",")) `, as shown below:
 
 ```{r curate6, echo = T}
 
@@ -204,18 +205,15 @@ Finally, it is worth noting that we can create variables pertaining to multiple 
 
 npr_full <- preload_npr(
   npr_data_root_dir = "//ess01/P471/data/durable/data/NPR/processed/",
-  npr_filename = "18_34161_NPR_out230920222.sav")
+  npr_filename = "18_34161_NPR.sav")
 
 #We'll feed this into the curate_dataset call below, speeding that (and any subsequent dataset curations using NPR data) up considerably
 
-random5morenprcodes <- suppressMessages(available_variables(source = "npr") %>% 
-  dplyr::slice_sample(n=5) %>% 
-  .$var_name)
+other_nprcodes <- c("F32","F33")
 
-print(random5morenprcodes)
 
-npr_groups <- c(paste0("ourdiagnoses = ",paste0(random5nprcodes,collapse=",")),
-                paste0("ourotherdiagnoses = ",paste0(random5morenprcodes,collapse=",")))
+npr_groups <- c(paste0("ourdiagnoses = ",paste0(nprcodes,collapse=",")),
+                paste0("ourotherdiagnoses = ",paste0(other_nprcodes,collapse=",")))
 
 
 #Add the selected npr codes to the curate_dataset call (as 'variables_required'), with arguments from curate_npr specified:

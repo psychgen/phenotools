@@ -6,6 +6,7 @@
 \alias{moba_mchat}
 \alias{moba_bmi}
 \alias{moba_lthmdd}
+\alias{moba_nhipic}
 \title{Helper functions for creating MoBa variables with non-standard coding}
 \usage{
 single_item(
@@ -33,6 +34,14 @@ moba_bmi(
 )
 
 moba_lthmdd(
+  moba_other_vars,
+  moba_other_vars_long,
+  moba_data,
+  return_items,
+  completion_threshold
+)
+
+moba_nhipic(
   moba_other_vars,
   moba_other_vars_long,
   moba_data,
@@ -74,5 +83,6 @@ dataset report for these).
 * `single_item()`: items that do not belong to a scale are retrieved by code using this function
 * `moba_bmi()``: BMI variables must be derived based on weight and height; outliers are removed as part of this process
 * `moba_mchat()`: some (but not all) M-CHAT variables have item codes that differ between questionnaire versions; a helper is needed to handle this
+* `moba_nhipic()`: some of the NHIPIC subscales  (extraversion, imagination, neuroticism) have item codes that differ between questionnaire versions; a helper is needed to handle this
 }
 

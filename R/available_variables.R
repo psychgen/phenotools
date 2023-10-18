@@ -24,8 +24,9 @@ available_variables <- function(source=c("moba","npr","kuhr"))
   }
   if(any(source %in%"npr")){
     temp_npr <- phenotools::npr  %>%
-      dplyr::mutate(var_name=ifelse(!is.na(level3), level3,
-                                    ifelse(!is.na(level2),level2,chapter))) %>%
+      dplyr::mutate(var_name=ifelse(!is.na(level4), level4,
+                                ifelse(!is.na(level3),level3,
+                                       ifelse(!is.na(level2),level2,chapter))))  %>%
       dplyr::distinct() %>%
       dplyr::mutate(source="npr",
                     measure = paste0("ICD10 code for: ", descriptor),

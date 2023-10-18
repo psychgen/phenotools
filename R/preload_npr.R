@@ -33,7 +33,7 @@ preload_npr <- function(npr_data_root_dir="//ess01/P471/data/durable/data/NPR/pr
     dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst")), list(~stringr::str_sub(.,end=4))) %>%
     dplyr::mutate_if(is.character, dplyr::na_if, "") %>%
     dplyr::mutate_at(dplyr::vars(dplyr::matches("Dato")), as.Date.character )%>%
-    dplyr::rename("LNr"= tidyr::ends_with("Nr"),
+    dplyr::rename("LNr"= dplyr::matches("lnr|lopenr"),
                   "omsorgsniva3" = dplyr::matches("omsorgsniva$"),
                   "henvTypeVurd" = dplyr::matches("henvType$")) %>%
     dplyr::mutate(NCMP_x = NA, # Dummy cols in case these code cols are not included
@@ -42,7 +42,7 @@ preload_npr <- function(npr_data_root_dir="//ess01/P471/data/durable/data/NPR/pr
   message(
 "\nNPR pre-load complete. You can now run curate_dataset with the object in which
 this NPR data is held listed under the 'npr_full' argument (or 'npr_preprocessed'
-if you have preloaded pre-processed data - see ?curate_npr for requierments).")
+if you have preloaded pre-processed data - see ?curate_npr for requirements).")
 
   return(npr_full)
 }

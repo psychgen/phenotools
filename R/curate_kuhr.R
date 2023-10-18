@@ -41,6 +41,7 @@
 #' is for p471)
 #' @param moba_data_version What version is the MoBa data you are linking to? Defaults to
 #' 12
+#' @param moba_filepaths Allows curate_dataset to pass on an amended list of filepaths
 #' @export
 #' @importFrom dplyr "%>%"
 #' @importFrom lubridate "%--%"
@@ -58,10 +59,11 @@ curate_kuhr <- function(diagnoses,
                         moba_data_root_dir= "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
                         kuhr_data_root_dir= "//ess01/P471/data/durable/data/KUHR/KUHR_current/DSV files/",
                         kuhr_filenames_override=NULL,
-                        linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage files/",
-                        kuhr_linkage_filename = "PDB2306_kobling_KUHR_Combined_20220112.sav",
+                        linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/KUHR_link/",
+                        kuhr_linkage_filename = "PDB2306_kobling_KUHR_mor_far_barn.sav",
                         PDB="2306",
                         moba_data_version = 12,
+                        moba_filepaths=NULL,
                         ...)
 {
 

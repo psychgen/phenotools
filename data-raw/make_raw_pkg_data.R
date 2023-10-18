@@ -12,12 +12,112 @@ moba <- read_excel("//ess01/P471/data/durable/common/phenotools_pkg/data/moba_ph
 
 use_data(moba, overwrite=TRUE)
 
-# Read in NPR codes
+
+#NPR
+
+#Script to make ICD codes list in phenotools format
+
+#Read in raw codes, sourced from https://www.cms.gov/Medicare/Coding/ICD10/2018-ICD-10-CM-and-GEMs
+#via https://github.com/k4m1113/ICD-10-CSV
+
+raw_cats <- read_csv("./data-raw/categories.csv", col_names = F) %>%
+  filter(str_length(X1)==3)
+raw_codes <- read_csv("./data-raw/codes.csv", col_names = F)
+
+codes <- raw_codes %>%
+  bind_rows(raw_cats) %>%
+  distinct() %>%
+  add_row(X1= unique(str_sub(raw_codes$X1, end =2)), X2= rep(NA,length(unique(str_sub(raw_codes$X1, end =2))))) %>%
+  add_row(X1= unique(str_sub(raw_codes$X1, end =3)) %>%
+            .[str_length(.)==3],
+          X2= rep(NA,length(unique(str_sub(raw_codes$X1, end =3)) %>%
+                              .[str_length(.)==3]))) %>%
+  add_row(X1= unique(str_sub(raw_codes$X1, end =4)) %>%
+            .[str_length(.)==4],
+          X2= rep(NA,length(unique(str_sub(raw_codes$X1, end =4)) %>%
+                              .[str_length(.)==4]))) %>%
+  mutate(chapter= ifelse(str_length(X1)==2, X1,NA),
+         level2= ifelse(str_length(X1)==3, X1,NA),
+         descriptor=ifelse(str_length(X1)==3, X2,NA),
+         level3= ifelse(str_length(X1)==4, X1,NA),
+         descriptor=ifelse(str_length(X1)==4, X2,descriptor),
+         level4= ifelse(str_length(X1)==5, X1,NA),
+         descriptor=ifelse(str_length(X1)==5, X2,descriptor)) %>%
+  select(chapter, level2, level3, level4, descriptor)
+
+
+#Read in raw section titles, extracted from https://icd.who.int/browse10/2019
+titles_lkp <- read_csv("./data-raw/chapters.csv", col_names = F)
+#Function for creating the full range of level2 codes in a chapter title
+seq_chapt <- function(start,end){
+  nums <- c(paste0("0", c(0:9)), 10:99)
+  all <- sort(unlist(list(outer(LETTERS, nums, paste0))))
+  required <- all[which(all==start):which(all==end)]
+  all_chaps <- paste0(unique(str_sub(required,end=3)),collapse=",")
+  return(all_chaps)
+}
+titles_lkp <- titles_lkp %>%
+  mutate(across(everything(), str_trim)) %>%
+  rowwise() %>%
+  mutate(all_chapters = seq_chapt(start=X1,end=X2)) %>%
+  select(-X1,-X2) %>%
+  mutate(all_chapters = strsplit(all_chapters, ",")) %>%
+  unnest(all_chapters) %>%
+  mutate(all_chapters=str_sub(all_chapters, end=2)) %>%
+  distinct()
+
+ #Add chapter titles
+final_codes <- codes %>%
+  left_join(titles_lkp %>%
+              select("chapter"=all_chapters, "chapt_desc"=X3)) %>%
+  mutate(descriptor=ifelse(!is.na(chapt_desc),chapt_desc,descriptor)) %>%
+  select(chapter,level2,level3,level4,descriptor)
+
+#Finally make sure we have all possible 3-digit codes, to ensure compatibility with earlier versions of phenotools
+
+nums <- paste0(rep(c(0:9), each=100), c(paste0("0", c(0:9)), 10:99))
+all <- sort(unlist(list(outer(LETTERS, nums, paste0))))
+all3 <- tibble(chapter=NA,level2=NA,level3=all,level4=NA,descriptor=NA) %>%
+  filter(!level3 %in% final_codes$level3)
+
+npr <- final_codes %>%
+  bind_rows(all3) %>%
+  mutate(chapter_all = chapter,
+         chapter_all = ifelse(!is.na(level2), str_sub(level2,end=2),chapter_all),
+         chapter_all = ifelse(!is.na(level3), str_sub(level3,end=2),chapter_all),
+         chapter_all = ifelse(!is.na(level4), str_sub(level4,end=2),chapter_all),
+         l2_all = level2,
+         l2_all = ifelse(!is.na(level3), str_sub(level3,end=3),l2_all),
+         l2_all = ifelse(!is.na(level4), str_sub(level4,end=3),l2_all),
+         l3_all = level3,
+         l3_all = ifelse(!is.na(level4), str_sub(level4,end=4),l3_all)) %>%
+  arrange(chapter_all,chapter,l2_all,level2,l3_all,level3,level4 ) %>%
+  group_by(chapter, level2) %>%
+  filter(n()!=2|!is.na(descriptor)) %>%
+  group_by(chapter, level2, level3) %>%
+  filter(n()!=2|!is.na(descriptor)) %>%
+  distinct()%>%
+  select(chapter,level2,level3,level4,descriptor)
+
+# Add in any missing descriptors from the old files
 
 npr_f <-readxl::read_excel("//ess01/P471/data/durable/common/phenotools_pkg/data/ICD10_F_NPR_list_250321.xlsx",col_names = T)
 npr_other <-readxl::read_excel("//ess01/P471/data/durable/common/phenotools_pkg/data/ICD10_other_NPR_list_150322.xlsx",col_names = T)
-npr <- npr_f %>%  bind_rows(npr_other)
+npr_old <- npr_f %>%
+  bind_rows(npr_other) %>%
+  select(level3,"descriptor_old"= descriptor) %>%
+  drop_na(level3)
+
+npr <- npr %>%
+  left_join(npr_old) %>%
+  mutate(descriptor=ifelse(is.na(descriptor),descriptor_old,descriptor)) %>%
+  select(-descriptor_old) %>%
+  ungroup()
+
+
+# Add to the package
 use_data(npr, overwrite = TRUE)
+
 
 
 # Read in KUHR codes
@@ -51,7 +151,9 @@ moba_filepaths <- dplyr::tibble(MBRN = make_moba_filepath("MBRN_541"),
                                 Q7yrs = make_moba_filepath("Q7yrs"),
                                 Q8yrs = make_moba_filepath("Q8yrs"),
                                 QF = make_moba_filepath("QF"),
-                                Far2 = make_moba_filepath("Far2")) %>%
+                                Far2 = make_moba_filepath("Far2"),
+                                Q14yM = make_moba_filepath("Q14yM"),
+                                Q14yB = make_moba_filepath("Q14yB")) %>%
   t() %>% as.data.frame %>%
   tibble::rownames_to_column() %>%
   `colnames<-`(c("questionnaire","filepath"))
@@ -63,9 +165,9 @@ for(q in unique(moba_filepaths$questionnaire)){
   message(paste0("\nLoading data from questionnaire ",q,", which is number ",match(q,unique(moba_filepaths$questionnaire))," of ", length(unique(moba_filepaths$questionnaire)) ))
 
   suppressMessages(qnames_temp <- haven::read_spss(moba_filepaths %>% dplyr::filter(questionnaire==q) %>% .$filepath ) %>%
-                       names())
+                     names())
 
-   q_names[[q]] <-qnames_temp
+  q_names[[q]] <-qnames_temp
 }
 
 moba_varnames <- q_names

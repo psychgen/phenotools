@@ -1,10 +1,38 @@
 #' Curate NPR data
 #'
 #' \code{curate_npr} is called by \code{curate_dataset}
-#' when npr variables are requested
+#' when npr variables are requested - options for this function are included
+#' directly in your \code{curate_dataset} call and passed on internally
 #'
 #'
-#' Detailed description...
+#' This internal function is called when you list ICD-10 diagnostic codes in your
+#' \code{curate_dataset} call. It's default is to work directly on a raw file
+#' delivered by NPR, but since deliveries often vary in structure and content
+#' in unpredictable ways, you may need to pre-process your NPR data for phenotools
+#' to be able to work with it. Necessary formatting conditions are as follows:
+#'
+#' - Data is in .sav format
+#' - One row per healthcare interaction (individuals recur across rows)
+#' - NPR ID column named either "LNR" or "LOPENR" (case insensitive)
+#' - Diagnoses in columns prefixed with "tilst" (usually as delivered)
+#' - Columns: innDato,utDato,henvType,omsorgsniva3,SUPtype (as delivered)
+#'
+#' If your raw file meets these conditions you should be able to direct the function
+#' to it \code{npr_filename} and \code{npr_data_root_dir} options in your
+#' \code{curate_dataset}) call. If not, you should create a version of the file
+#' meeting these conditions for use with phenotools.
+#'
+#' The next step, prior to processing diagnoses, is to link with MoBa IDs. Again,
+#' the function will do this automatically if the linkage file (specified via
+#'  \code{npr_linkage_filename} and \code{linkage_file_root_dir}) is in the standard
+#'  format, i.e., containing linkage information for all members of family trios
+#'  with the columns preg_id, m_id, f_id (all case insensitive), BARN_NR, LNr, and
+#'  the variable SUPtype (case insensitive) - which is either "child", "mother",
+#'  or "father" depending on who is the owner of the LNr. If the linkage file is
+#'  not in this format, either format the file to match or pre-link the data yourself,
+#'  in which case it should be read into memory and supplied using the option
+#'   \code{npr_preprocessed}
+#'
 #'
 #' @param diagnoses ICD codes (see \code{available_variables(source=\"npr\")})
 #' @param recursive also include sub-codes of codes you have provided in the
@@ -42,6 +70,7 @@
 #' is for p471)
 #' @param moba_data_version What version is the MoBa data you are linking to? Defaults to
 #' 12
+#' @param moba_filepaths Allows curate_dataset to pass on an amended list of filepaths
 #' @export
 #' @importFrom dplyr "%>%"
 #' @importFrom lubridate "%--%"
@@ -58,12 +87,17 @@ curate_npr <- function(diagnoses,
                        moba_data_root_dir= "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
                        npr_data_root_dir= "//ess01/P471/data/durable/data/NPR/processed/",
                        npr_filename="18_34161_NPR.sav",
-                       linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage files/",
+                       linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/NPR_link/",
                        npr_linkage_filename = "PDB2306_kobling_NPR_mor_far_barn.sav",
                        PDB="2306",
                        moba_data_version = 12,
+                       moba_filepaths= NULL,
                        ...)
 {
+
+  ## Initial warning about checking available NPR codes...
+  warning(
+    "\nAll diagnostic codes from across all chapters of the ICD-10 are theoretically able to be retrieved and processed by the phenotools package. However, we have no way of knowing which codes *should* be available to you in your TSD project. Check with your project administrator to make sure you are aware which diagnostic codes are available as primary diagnoses in your project. If you have requested codes that were not primary diagnoses in your project's data delivery, but which have not been properly censored and so occur as secondary diagnoses in your project's dataset, phenotools will return them without making a distinction.\nTo avoid reporting incorrect counts of diagnoses, it is your responsibility to ensure that requested codes are available in your project.\n")
 
   ## LOADING FULL NPR DATASET INTO MEMORY
   ############################
@@ -91,12 +125,12 @@ curate_npr <- function(diagnoses,
 
     npr_full <-npr_preprocessed%>%
       dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst|NCMP|NCSP")), list(~stringr::str_remove_all(.,"[[:punct:]]"),
-                                                                         ~stringr::str_trim(.,"both"),
-                                                                         ~stringr::str_replace_all(., stringr::fixed(" "), ""))) %>% #Remove non alphanumeric values in all tilst- variables
+                                                                                ~stringr::str_trim(.,"both"),
+                                                                                ~stringr::str_replace_all(., stringr::fixed(" "), ""))) %>% #Remove non alphanumeric values in all tilst- variables
       dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst")), list(~stringr::str_sub(.,end=4))) %>%
       dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst|NCMP|NCSP")), dplyr::na_if, "") %>%
       dplyr::mutate_at(dplyr::vars(dplyr::matches("Dato")), as.Date.character ) %>%
-      dplyr::rename("LNr"= tidyr::ends_with("Nr"),
+      dplyr::rename("LNr"=dplyr::matches("lnr|lopenr"),
                     "omsorgsniva3" = dplyr::matches("omsorgsniva$"),
                     "henvTypeVurd" = dplyr::matches("henvType$")) %>%
       dplyr::mutate(NCMP_x = NA, # Dummy cols in case these code cols are not included
@@ -116,8 +150,8 @@ curate_npr <- function(diagnoses,
 
       npr_full <- haven::read_spss(paste0(npr_data_root_dir,npr_filename)) %>%
         dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst|NCMP|NCSP")), list(~stringr::str_remove_all(.,"[[:punct:]]"),
-                                                                           ~stringr::str_trim(.,"both"),
-                                                                           ~stringr::str_replace_all(., stringr::fixed(" "), ""))) %>% #Remove non alphanumeric values in all tilst- variables
+                                                                                  ~stringr::str_trim(.,"both"),
+                                                                                  ~stringr::str_replace_all(., stringr::fixed(" "), ""))) %>% #Remove non alphanumeric values in all tilst- variables
         dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst")), list(~stringr::str_sub(.,end=4))) %>%
         dplyr::mutate_if(is.character, dplyr::na_if, "") %>%
         dplyr::mutate_at(dplyr::vars(dplyr::matches("Dato")), as.Date.character )%>%
@@ -184,7 +218,7 @@ curate_npr <- function(diagnoses,
                                                             dplyr::filter(dx_owner=="child") %>%
                                                             dplyr::select(-m_id,-f_id)) %>%
                                          dplyr::mutate(dx_owner="child")) #Ensures that those without linkage are
-                                                                           #identifiable within a family
+    #identifiable within a family
 
     npr_link_mother <- suppressMessages(sv_info %>%
                                           dplyr::left_join(mbrn) %>%
@@ -192,14 +226,14 @@ curate_npr <- function(diagnoses,
                                                              dplyr::filter(dx_owner=="mother") %>%
                                                              dplyr::select(-preg_id,-f_id,-BARN_NR)) %>%
                                           dplyr::mutate(dx_owner="mother")) #Ensures that those without linkage are
-                                                                             #identifiable within a family
+    #identifiable within a family
     npr_link_father <- suppressMessages(sv_info %>%
                                           dplyr::left_join(mbrn) %>%
                                           dplyr::left_join(link %>%
                                                              dplyr::filter(dx_owner=="father") %>%
                                                              dplyr::select(-m_id,-preg_id,-BARN_NR)) %>%
                                           dplyr::mutate(dx_owner="father")) #Ensures that those without linkage are
-                                                                             #identifiable within a family
+    #identifiable within a family
 
     npr_link_moba <- suppressMessages(npr_link_child %>%
                                         dplyr::bind_rows(npr_link_mother) %>%
@@ -245,11 +279,13 @@ curate_npr <- function(diagnoses,
 
     if(length(diagnoses_std)>0){
       diag_std_tmp <- phenotools::npr %>%
-        dplyr::filter(stringr::str_detect(level3,paste(diagnoses_std, collapse = "|"))|
+        dplyr::filter(stringr::str_detect(level4,paste(diagnoses_std, collapse = "|"))|
+                        stringr::str_detect(level3,paste(diagnoses_std, collapse = "|"))|
                         stringr::str_detect(level2,paste(diagnoses_std, collapse = "|"))|
                         stringr::str_detect(chapter,paste(diagnoses_std, collapse = "|"))) %>%
-        dplyr::mutate(diag=ifelse(!is.na(level3), level3,
-                                  ifelse(!is.na(level2),level2,chapter))) %>%
+        dplyr::mutate(diag=ifelse(!is.na(level4), level4,
+                                  ifelse(!is.na(level3),level3,
+                                         ifelse(!is.na(level2),level2,chapter)))) %>%
         dplyr::filter(!diag %in% exclusions)
     }else {
       diag_std_tmp <- NULL
@@ -259,27 +295,30 @@ curate_npr <- function(diagnoses,
     if(exists("diagnoses_new")){
       diag_new_tmp <- data.frame()
 
-       for(i in 1:nrow(diagnoses_new)){
+      for(i in 1:nrow(diagnoses_new)){
 
-       diag_new_tmp_tmp <- phenotools::npr %>%
-        dplyr::filter(stringr::str_detect(level3,paste(diagnoses_new$diagnoses[[i]], collapse = "|"))|
-                        stringr::str_detect(level2,paste(diagnoses_new$diagnoses[[i]], collapse = "|"))|
-                        stringr::str_detect(chapter,paste(diagnoses_new$diagnoses[[i]], collapse = "|"))) %>%
-        dplyr::mutate(diag=ifelse(!is.na(level3), level3,
-                                  ifelse(!is.na(level2),level2,chapter)),
-                      dx_groupname = diagnoses_new$dx_groupname[i]) %>%
-        dplyr::filter(!diag %in% exclusions)
+        diag_new_tmp_tmp <- phenotools::npr %>%
+          dplyr::filter(stringr::str_detect(level4,paste(diagnoses_new$diagnoses[[i]], collapse = "|"))|
+                          stringr::str_detect(level3,paste(diagnoses_new$diagnoses[[i]], collapse = "|"))|
+                          stringr::str_detect(level2,paste(diagnoses_new$diagnoses[[i]], collapse = "|"))|
+                          stringr::str_detect(chapter,paste(diagnoses_new$diagnoses[[i]], collapse = "|"))) %>%
+          dplyr::mutate(diag=ifelse(!is.na(level4), level4,
+                                    ifelse(!is.na(level3),level3,
+                                           ifelse(!is.na(level2),level2,chapter))),
+                        dx_groupname = diagnoses_new$dx_groupname[i]) %>%
+          dplyr::filter(!diag %in% exclusions)
 
-       diag_new_tmp <- rbind(diag_new_tmp,diag_new_tmp_tmp)
-     }
+        diag_new_tmp <- rbind(diag_new_tmp,diag_new_tmp_tmp)
+      }
     }
   } else{
 
     if(length(diagnoses_std)>0){
-    diag_std_tmp <- phenotools::npr %>%
-      dplyr::mutate(diag=ifelse(!is.na(level3), level3,
-                                ifelse(!is.na(level2),level2,chapter))) %>%
-      dplyr::filter(diag %in% diagnoses & !diag %in% exclusions)
+      diag_std_tmp <- phenotools::npr %>%
+        dplyr::mutate(diag=ifelse(!is.na(level4), level4,
+                                  ifelse(!is.na(level3),level3,
+                                         ifelse(!is.na(level2),level2,chapter)))) %>%
+        dplyr::filter(diag %in% diagnoses & !diag %in% exclusions)
     }else {
       diag_std_tmp <- NULL
     }
@@ -288,14 +327,15 @@ curate_npr <- function(diagnoses,
       diag_new_tmp <- data.frame()
       for(i in 1:nrow(diagnoses_new)){
 
-      diag_new_tmp_tmp <- phenotools::npr %>%
-        dplyr::mutate(diag=ifelse(!is.na(level3), level3,
-                                  ifelse(!is.na(level2),level2,chapter))) %>%
-        dplyr::filter(diag %in% diagnoses_new$diagnoses[[i]]& !diag %in% exclusions) %>%
-        dplyr::mutate(dx_groupname = diagnoses_new$dx_groupname[i])
+        diag_new_tmp_tmp <- phenotools::npr %>%
+          dplyr::mutate(diag=ifelse(!is.na(level4), level4,
+                                    ifelse(!is.na(level3),level3,
+                                           ifelse(!is.na(level2),level2,chapter)))) %>%
+          dplyr::filter(diag %in% diagnoses_new$diagnoses[[i]]& !diag %in% exclusions) %>%
+          dplyr::mutate(dx_groupname = diagnoses_new$dx_groupname[i])
 
 
-      diag_new_tmp <- rbind(diag_new_tmp,diag_new_tmp_tmp)
+        diag_new_tmp <- rbind(diag_new_tmp,diag_new_tmp_tmp)
       }
     }
   }
@@ -415,7 +455,7 @@ Resulting variables will be labelled with ", if(!is.null(dx_groupname)){dx_group
       d <- paste0(diag_new_tmp %>% dplyr::filter(dx_groupname==dx) %>% .$diag, collapse = "|")
 
       message(paste0(
-"\nProcessing diagnosis codes ",paste0(diag_new_tmp %>% dplyr::filter(dx_groupname==dx) %>% .$diag, collapse = ", ")," as a group; resulting variables will be labelled with ", dx,". Other curate_npr options are applied as specified or at their defaults (see ?curate_npr)."))
+        "\nProcessing diagnosis codes ",paste0(diag_new_tmp %>% dplyr::filter(dx_groupname==dx) %>% .$diag, collapse = ", ")," as a group; resulting variables will be labelled with ", dx,". If you only wanted the exact codes specified in your input, you may want need to re-run with 'recursive=FALSE'. Other curate_npr options are applied as specified in your 'curate_dataset' call, or at their defaults (see ?curate_npr)."))
 
       npr_processed_tmp <- process_npr(d) %>%
         dplyr::rename_at(dplyr::vars(dplyr::matches("_dx")), ~paste(.,dx,"npr",sep="_"))
@@ -433,13 +473,17 @@ Resulting variables will be labelled with ", if(!is.null(dx_groupname)){dx_group
     rm(npr_full)
   }
 
+  #Drop all-NA columns (occur when impossible diagnostic codes get included
+
+  not_all_na <- function(x) {!all(is.na(x))}
 
   npr_processed <- npr_processed %>%
+    dplyr::select(where(not_all_na)) %>%
     dplyr::filter(dx_owner %in% dx_owners) %>%
     dplyr::mutate_at(dplyr::vars(dplyr::contains("received_dx")),
                      list( ~ dplyr::case_when(!is.na(LNr)&is.na(.) ~ "no",
-                                                  !is.na(LNr)&!is.na(.) ~ "yes",
-                                                  is.na(LNr) ~ .))) %>%
+                                              !is.na(LNr)&!is.na(.) ~ "yes",
+                                              is.na(LNr) ~ .))) %>%
     dplyr::select(-LNr) %>%
     dplyr::mutate(preg_id = as.character(preg_id)) %>%
     dplyr::rename(birth_yr = FAAR)
@@ -454,18 +498,18 @@ Resulting variables will be labelled with ", if(!is.null(dx_groupname)){dx_group
   }
 
   if(any(stringr::str_detect(dx_owners, "mother|father"))){
-  message(
-"\nRemember, this dataset has one row per MoBa child (unique by a comination of
+    message(
+      "\nRemember, this dataset has one row per MoBa child (unique by a comination of
 preg_id and BARN_NR). Therefore, counts of parental diagnoses based on these data
 will be inflated (some parents appear in multiple rows). For accurate counts, you
 need to restrict to unique m_id/f_ids.")
-}
+  }
 
 
   #String replace commas with | to avoid problems with write.csv
 
   npr_processed <-  npr_processed %>%
-                          dplyr::mutate_if(is.character, list(~stringr::str_replace_all(.,",","|") ))
+    dplyr::mutate_if(is.character, list(~stringr::str_replace_all(.,",","|") ))
 
 
   if(exists("npr_link_moba")){

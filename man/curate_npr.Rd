@@ -17,10 +17,11 @@ curate_npr(
     moba_data_root_dir = "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
   npr_data_root_dir = "//ess01/P471/data/durable/data/NPR/processed/",
   npr_filename = "18_34161_NPR.sav",
-  linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage files/",
+  linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/NPR_link/",
   npr_linkage_filename = "PDB2306_kobling_NPR_mor_far_barn.sav",
   PDB = "2306",
   moba_data_version = 12,
+  moba_filepaths = NULL,
   ...
 )
 }
@@ -75,11 +76,40 @@ is for p471)}
 
 \item{moba_data_version}{What version is the MoBa data you are linking to? Defaults to
 12}
+
+\item{moba_filepaths}{Allows curate_dataset to pass on an amended list of filepaths}
 }
 \description{
 \code{curate_npr} is called by \code{curate_dataset}
-when npr variables are requested
+when npr variables are requested - options for this function are included
+directly in your \code{curate_dataset} call and passed on internally
 }
 \details{
-Detailed description...
+This internal function is called when you list ICD-10 diagnostic codes in your
+\code{curate_dataset} call. It's default is to work directly on a raw file
+delivered by NPR, but since deliveries often vary in structure and content
+in unpredictable ways, you may need to pre-process your NPR data for phenotools
+to be able to work with it. Necessary formatting conditions are as follows:
+
+- Data is in .sav format
+- One row per healthcare interaction (individuals recur across rows)
+- NPR ID column named either "LNR" or "LOPENR" (case insensitive)
+- Diagnoses in columns prefixed with "tilst" (usually as delivered)
+- Columns: innDato,utDato,henvType,omsorgsniva3,SUPtype (as delivered)
+
+If your raw file meets these conditions you should be able to direct the function
+to it \code{npr_filename} and \code{npr_data_root_dir} options in your
+\code{curate_dataset}) call. If not, you should create a version of the file
+meeting these conditions for use with phenotools.
+
+The next step, prior to processing diagnoses, is to link with MoBa IDs. Again,
+the function will do this automatically if the linkage file (specified via
+ \code{npr_linkage_filename} and \code{linkage_file_root_dir}) is in the standard
+ format, i.e., containing linkage information for all members of family trios
+ with the columns preg_id, m_id, f_id (all case insensitive), BARN_NR, LNr, and
+ the variable SUPtype (case insensitive) - which is either "child", "mother",
+ or "father" depending on who is the owner of the LNr. If the linkage file is
+ not in this format, either format the file to match or pre-link the data yourself,
+ in which case it should be read into memory and supplied using the option
+  \code{npr_preprocessed}
 }

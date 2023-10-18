@@ -50,7 +50,11 @@ inputs on PDB, moba_data_version, and the standard codes for each questionnaire
 (see unique(available_variables("moba")$questionnaire) + "SV_INFO" and "MBRN")
 to give the format: "PDB>PDB<_>code<_v>moba_data_version<.sav"). If you need to
 override this because the filenames have been altered in your TSD project, add
- a vector of strings here, e.g., 'override_filenames = c("Q1 = new_Q1_filename.sav")}
+ a vector of strings here, e.g., 'override_filenames = c("Q1 = new_Q1_filename.sav").
+ The SV_INFO and MBRN files are accessed implicitly for every curate call, so
+ you will need to provide filenames for these (as well as the questionnaire files
+ from which your variables are to be sourced) if they differ from the expected format
+ is a reminder that these sources}
 
 \item{...}{arguments to pass to internal functions, see ?curate_moba_scales
 and ?curate_npr}

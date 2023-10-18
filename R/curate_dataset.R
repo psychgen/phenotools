@@ -36,7 +36,11 @@
 #' (see unique(available_variables("moba")$questionnaire) + "SV_INFO" and "MBRN")
 #' to give the format: "PDB>PDB<_>code<_v>moba_data_version<.sav"). If you need to
 #' override this because the filenames have been altered in your TSD project, add
-#'  a vector of strings here, e.g., 'override_filenames = c("Q1 = new_Q1_filename.sav")
+#'  a vector of strings here, e.g., 'override_filenames = c("Q1 = new_Q1_filename.sav").
+#'  The SV_INFO and MBRN files are accessed implicitly for every curate call, so
+#'  you will need to provide filenames for these (as well as the questionnaire files
+#'  from which your variables are to be sourced) if they differ from the expected format
+#'  is a reminder that these sources
 #' @param ... arguments to pass to internal functions, see ?curate_moba_scales
 #' and ?curate_npr
 #' @export
@@ -276,6 +280,56 @@ For a list of valid pre-processed variable names run avaliable_variables(), or c
   ################
   #PROCESS: MOBA
   ################
+
+  ##Make up lookup table of filepaths, comprising defaults and any overrides
+  ##NB this is done outside of the MoBa-specific section because curate_npr/kuhr
+  ##need to inherit any changes to moba mbrn and sv_info filepaths
+
+  make_moba_filepath <- function(x, name=NULL){
+    if(is.null(name)){
+      return(paste0(moba_data_root_dir,"PDB",PDB,"_",x,"_v",moba_data_version,".sav"))
+    }else{
+      return(paste0(moba_data_root_dir,name))
+    }
+  }
+
+  moba_filepaths <- dplyr::tibble(MBRN = make_moba_filepath("MBRN_541"),
+                                  SV_INFO = make_moba_filepath("SV_INFO"),
+                                  Q1 = make_moba_filepath("Q1"),
+                                  Q3 = make_moba_filepath("Q3"),
+                                  Q4_6months = make_moba_filepath("Q4_6months"),
+                                  Q5_18months = make_moba_filepath("Q5_18months"),
+                                  Q5yrs = make_moba_filepath("Q5yrs"),
+                                  Q6_3yrs = make_moba_filepath("Q6_3yrs"),
+                                  Q7yrs = make_moba_filepath("Q7yrs"),
+                                  Q8yrs = make_moba_filepath("Q8yrs"),
+                                  QF = make_moba_filepath("QF"),
+                                  Far2 = make_moba_filepath("Far2"),
+                                  Q14yM = make_moba_filepath("Q14yM"),
+                                  Q14yB = make_moba_filepath("Q14yB")) %>%
+    t() %>% as.data.frame %>%
+    tibble::rownames_to_column() %>%
+    `colnames<-`(c("questionnaire","filepath"))
+
+  if(any(stringr::str_detect(override_filenames, "="))){
+
+    filepaths_new <- override_filenames %>%
+      dplyr::as_tibble() %>%
+      tidyr::separate(value, into = c("questionnaire","name"), sep="=") %>%
+      dplyr::mutate_all(stringr::str_trim) %>%
+      dplyr::mutate(filepath = make_moba_filepath(questionnaire,name))
+
+    if(any(!stringr::str_detect(filepaths_new$filepath,".sav"))){
+      stop("Only SPSS files supported as inputs at present; you have either specified a non-SPSS file
+in override_filenames or else forgotten the '.sav' file extension.")
+    }
+
+
+    moba_filepaths$filepath[match(filepaths_new$questionnaire, moba_filepaths$questionnaire)] <- filepaths_new$filepath
+
+  }
+
+
   if(any(sources$source == "moba")){
 
     message("\nProcessing MoBa variables...")
@@ -310,51 +364,6 @@ the MoBa instrument synthesis).As such, they have a different response set (Yes,
 this variable are not comparable to scores on the ASQ in raw form. Phenotools allows the scale to be
 called by either the asq_ or cdi_ prefix for consistency with both MoBa documentation and the true
 source of the items.") )}
-
-
-    ##Make up lookup table of filepaths, comprising defaults and any overrides
-
-    make_moba_filepath <- function(x, name=NULL){
-      if(is.null(name)){
-      return(paste0(moba_data_root_dir,"PDB",PDB,"_",x,"_v",moba_data_version,".sav"))
-      }else{
-        return(paste0(moba_data_root_dir,name))
-      }
-    }
-
-    moba_filepaths <- dplyr::tibble(MBRN = make_moba_filepath("MBRN_541"),
-                                   SV_INFO = make_moba_filepath("SV_INFO"),
-                                   Q1 = make_moba_filepath("Q1"),
-                                   Q3 = make_moba_filepath("Q3"),
-                                   Q4_6months = make_moba_filepath("Q4_6months"),
-                                   Q5_18months = make_moba_filepath("Q5_18months"),
-                                   Q5yrs = make_moba_filepath("Q5yrs"),
-                                   Q6_3yrs = make_moba_filepath("Q6_3yrs"),
-                                   Q7yrs = make_moba_filepath("Q7yrs"),
-                                   Q8yrs = make_moba_filepath("Q8yrs"),
-                                   QF = make_moba_filepath("QF"),
-                                   Far2 = make_moba_filepath("Far2")) %>%
-      t() %>% as.data.frame %>%
-      tibble::rownames_to_column() %>%
-      `colnames<-`(c("questionnaire","filepath"))
-
-    if(any(stringr::str_detect(override_filenames, "="))){
-
-     filepaths_new <- override_filenames %>%
-        dplyr::as_tibble() %>%
-        tidyr::separate(value, into = c("questionnaire","name"), sep="=") %>%
-        dplyr::mutate_all(stringr::str_trim) %>%
-        dplyr::mutate(filepath = make_moba_filepath(questionnaire,name))
-
-     if(any(!stringr::str_detect(filepaths_new$filepath,".sav"))){
-       stop("Only SPSS files supported as inputs at present; you have either specified a non-SPSS file
-in override_filenames or else forgotten the '.sav' file extension.")
-     }
-
-
-     moba_filepaths$filepath[match(filepaths_new$questionnaire, moba_filepaths$questionnaire)] <- filepaths_new$filepath
-
-      }
 
 
    ##Create data.frame of PREG_IDs to aggregate created variables
@@ -398,7 +407,7 @@ in override_filenames or else forgotten the '.sav' file extension.")
                                          unlist(strsplit(paste0(dplyr::filter(moba_vars,questionnaire == q)$items, collapse=","),","))) %>%
                            dplyr::mutate(f_id=as.character(f_id)))
       }
-      if(q %in% c("Q4_6months","Q5_18months","Q5yrs","Q6_3yrs","Q7yrs","Q8yrs","MBRN")){
+      if(q %in% c("Q4_6months","Q5_18months","Q5yrs","Q6_3yrs","Q7yrs","Q8yrs","MBRN","Q14yB","Q14yM")){
         suppressMessages(qvars_temp <- haven::read_spss(moba_filepaths %>% dplyr::filter(questionnaire==q) %>% .$filepath ) %>%
                            dplyr::mutate(EE_EASsoc_dummy = NA) %>%
                            dplyr::select(preg_id = dplyr::matches("PREG_ID"), BARN_NR,
@@ -542,6 +551,7 @@ to your main dataset.")
   }
 
 
+
   #NPR
   ###################################################################################
   if(any(sources$source == "npr")){
@@ -567,7 +577,9 @@ curate_npr().")
             dplyr::filter(source =="npr")))
 
 
-        npr_data_combined <- curate_npr(diagnoses = npr_vars$var_name, ...)
+        npr_data_combined <- curate_npr(diagnoses = npr_vars$var_name,
+                                        moba_filepaths = moba_filepaths,
+                                        ...)
 
 
     message("\nNPR dataset curation complete.")
@@ -600,7 +612,9 @@ curate_kuhr().")
             dplyr::filter(source =="kuhr")))
 
 
-    kuhr_data_combined <- curate_kuhr(diagnoses = kuhr_vars$var_name, ...)
+    kuhr_data_combined <- curate_kuhr(diagnoses = kuhr_vars$var_name,
+                                      moba_filepaths = moba_filepaths,
+                                      ...)
 
 
     message("\nKUHR dataset curation complete.")
