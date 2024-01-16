@@ -349,6 +349,23 @@ moba_bmi <- function(moba_other_vars,
 
     message(paste0("Processing BMI variable ",match(v,unique(bmi_vars$var_name))," of ", length(unique(bmi_vars$var_name)),"..." ))
 
+    # Recode  14-year vars if required - they are hard coded to the wrong values in the raw data
+    if(v == "bmi_derived_c_14c"){
+      moba_bmi_data_temp <- moba_bmi_data_temp %>%
+        dplyr::mutate(value = ifelse(item_name %in% c("UB220","UB321") & value ==1, NA, value))  %>% #sets the "do not knows" to NA
+        dplyr::mutate(value = ifelse(item_name %in% c("UB221","UB322") & value ==1, NA, value))  %>% #sets the "do not knows" to NA
+        dplyr::mutate(value = dplyr::case_when(item_name %in% c("UB322") & value ==78 ~ value +2, #sets those where value represents a range to the middle of that range (after constant added below)
+                                               item_name %in% c("UB322") & value ==79 ~ value +6, #sets those where value represents a range to the middle of that range (after constant added below)
+                                               item_name %in% c("UB322") & value ==80 ~ value +10, #sets those where value represents a range to the middle of that range (after constant added below)
+                                               item_name %in% c("UB322") & value ==81 ~ value +14, #sets those where value represents a range to the middle of that range (after constant added below)
+                                               item_name %in% c("UB322") & value ==82 ~ value +21, #sets those where value represents a range to the middle of that range (after constant added below)
+                                               item_name %in% c("UB322") & value ==83 ~ value +30, #sets those where value represents a range to the middle of that range (after constant added below)
+                                               item_name %in% c("UB322") & value ==84 ~ value +34, #sets those at 140+ to 140 (after constant added below)
+                                               TRUE ~ value))  %>%
+        dplyr::mutate(value = ifelse(item_name %in% c("UB220","UB321"), value+122, value))  %>%
+        dplyr::mutate(value = ifelse(item_name %in% c("UB221","UB322"), value+22, value))
+    }
+
 
     moba_bmi_data_temp_mini <- moba_bmi_data_temp %>%
       dplyr::filter(var_name == v) %>%
@@ -356,6 +373,7 @@ moba_bmi <- function(moba_other_vars,
       dplyr::group_by(preg_id,BARN_NR, item_type) %>%
       tidyr::fill("value", .direction="downup") %>%
       dplyr::distinct() %>%
+      dplyr::ungroup() %>%
       tidyr::spread(item_type,value) %>%
       dplyr::mutate_at(dplyr::vars(weightkg,heightcm), .funs=list(mean = ~mean(.,na.rm=T), sd = ~sd(.,na.rm=T))) %>%
       dplyr::mutate(weight_outlier = ifelse(weightkg>(weightkg_mean+(3*weightkg_sd))|weightkg<(weightkg_mean-(3*weightkg_sd)),"Outliers: weight (+/- 3SDs)",NA),
@@ -383,6 +401,9 @@ moba_bmi <- function(moba_other_vars,
       dplyr::mutate(heightcm_derived_c_7yr = heightcm_derived_c_7yr*100) %>%
       dplyr::mutate(bmi_derived_c_7yr = weightkg_derived_c_7yr/((heightcm_derived_c_7yr/100)^2))
   }
+
+
+
   message("\nProcessing of BMI variables is complete.")
   return(moba_bmi_data)
 }

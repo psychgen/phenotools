@@ -1,6 +1,12 @@
 # *Changelog for phenotools package*
 
 
+# phenotools 0.3.2 (12.01.24)
+
+* Bug fixes:
+    *Resolved significant issue with bmi_derived_c_14c variable processing, which was previously being based on miscoded values
+    *Resolved issue with BMI code in moba_helpers introduced in 0.3.1 which was preventing outliers from being excluded in all BMI variables
+
 
 # phenotools 0.3.1 (05.10.23)
 
