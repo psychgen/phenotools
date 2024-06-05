@@ -13,12 +13,14 @@ curate_kuhr(
   group_all = FALSE,
   dx_groupname = NULL,
   dx_owners = c("child"),
+  dx_range_limits = NULL,
   kuhr_full = NULL,
  
     moba_data_root_dir = "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
   kuhr_data_root_dir = "//ess01/P471/data/durable/data/KUHR/KUHR_current/DSV files/",
   kuhr_filenames_override = NULL,
-  linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/KUHR_link/",
+ 
+    kuhr_linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/KUHR_link/",
   kuhr_linkage_filename = "PDB2306_kobling_KUHR_mor_far_barn.sav",
   PDB = "2306",
   moba_data_version = 12,
@@ -52,6 +54,11 @@ vareiables pertaining to the grouped diagnoses}
 one row per pregnancy, but you can get the diagnoses relevant to any
 combination of "child", "father", and "mother"; the default is "child"}
 
+\item{dx_range_limits}{If you want only to extract diagnoses from a particular
+range of available years, provide limits here (e.g., "c(2008,2010)" will retrieve
+diagnoses from 2008, 2009, and 2010 only). Defaults to NULL - i.e., extract
+from all available data}
+
 \item{kuhr_full}{if you already have the KUHR data loaded in memory, you can
 save some time by providing the name of the R object here; note
 that there are specific requirements for the structure of this file (see
@@ -66,7 +73,7 @@ is for p471)}
 \item{kuhr_filenames_override}{If the KUHR filenames are not YEAR_Data_KUHR.csv,
 what are they?}
 
-\item{linkage_file_root_dir}{Where are the linkage files? (default
+\item{kuhr_linkage_file_root_dir}{Where are the linkage files? (default
 is for p471)}
 
 \item{kuhr_linkage_filename}{What is the name of the linkage file? (default

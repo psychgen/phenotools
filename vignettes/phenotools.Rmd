@@ -39,7 +39,7 @@ mask_ids <- function(x){
 
 The goal of the **phenotools** package is to facilitate efficient and reproducible use of phenotypic data from MoBa and linked registry sources in the TSD environment. 
 
-Please contact laurie.hannigan@bristol.ac.uk with bugs, feedback, or development ideas.
+Please contact laurie.hannigan@fhi.no with bugs, feedback, or development ideas.
 
 &nbsp;
 
@@ -205,7 +205,7 @@ Finally, it is worth noting that we can create variables pertaining to multiple 
 
 npr_full <- preload_npr(
   npr_data_root_dir = "//ess01/P471/data/durable/data/NPR/processed/",
-  npr_filename = "18_34161_NPR.sav")
+  npr_filename = "npr2024.sav")
 
 #We'll feed this into the curate_dataset call below, speeding that (and any subsequent dataset curations using NPR data) up considerably
 

@@ -20,6 +20,10 @@ use_data(moba, overwrite=TRUE)
 #Read in raw codes, sourced from https://www.cms.gov/Medicare/Coding/ICD10/2018-ICD-10-CM-and-GEMs
 #via https://github.com/k4m1113/ICD-10-CSV
 
+#Update 2024 -- user noted that code F83 was missing despite being in the data;
+#this is because the code is missing in these CSV files
+#now built in a failsafe to capture all possible codes
+
 raw_cats <- read_csv("./data-raw/categories.csv", col_names = F) %>%
   filter(str_length(X1)==3)
 raw_codes <- read_csv("./data-raw/codes.csv", col_names = F)
@@ -73,14 +77,21 @@ final_codes <- codes %>%
   mutate(descriptor=ifelse(!is.na(chapt_desc),chapt_desc,descriptor)) %>%
   select(chapter,level2,level3,level4,descriptor)
 
-#Finally make sure we have all possible 3-digit codes, to ensure compatibility with earlier versions of phenotools
+#Finally make sure we have all possible codes, to ensure compatibility with earlier versions of phenotools
+#and handle missing codes from source csv files
 
 nums <- paste0(rep(c(0:9), each=100), c(paste0("0", c(0:9)), 10:99))
 all <- sort(unlist(list(outer(LETTERS, nums, paste0))))
+all1 <- tibble(chapter=unique(str_sub(all,end=2)),level2=NA,level3=NA,level4=NA,descriptor=NA) %>%
+  filter(!chapter %in% final_codes$chapter)
+all2 <- tibble(chapter=NA,level2=unique(str_sub(all,end=3)),level3=NA,level4=NA,descriptor=NA) %>%
+  filter(!level2 %in% final_codes$level2)
 all3 <- tibble(chapter=NA,level2=NA,level3=all,level4=NA,descriptor=NA) %>%
   filter(!level3 %in% final_codes$level3)
 
 npr <- final_codes %>%
+  bind_rows(all1) %>%
+  bind_rows(all2) %>%
   bind_rows(all3) %>%
   mutate(chapter_all = chapter,
          chapter_all = ifelse(!is.na(level2), str_sub(level2,end=2),chapter_all),
@@ -173,3 +184,38 @@ for(q in unique(moba_filepaths$questionnaire)){
 moba_varnames <- q_names
 
 use_data(moba_varnames, overwrite = TRUE)
+
+
+#p471 variable reference list
+
+p471_npr = read_delim("//ess01/P471/data/durable/data/NPR/NPR_requested_p471_2024.csv")
+
+p471 = p471_npr %>%
+  bind_rows(phenotools::npr %>%
+              select("var_name"=level3) %>%
+              filter(str_detect(var_name,
+                                p471_npr %>%
+                                  filter(level==3) %>%
+                                  .$var_name %>%
+                                  paste0(collapse="|")))) %>%
+  bind_rows(phenotools::npr %>%
+              select("var_name"=level4) %>%
+              filter(str_detect(var_name,
+                                p471_npr %>%
+                                  filter(level==4) %>%
+                                  .$var_name %>%
+                                  paste0(collapse="|")))) %>%
+  arrange(var_name) %>%
+  select(var_name) %>%
+  bind_rows(phenotools::available_variables(source="moba") %>%
+              select(var_name)) %>%
+  bind_rows(phenotools::kuhr %>%
+              select("var_name"=Code))
+
+
+#########NB, for MoBa and KUHR, this assumes that p471 has all variables phenotools can make
+#########This is true for now, but ideally available_variables should return a canonical list
+#########of variables for these sources that is project agnostic - at that point this code will
+#########need updating to reflect what p471 actually has available
+
+use_data(p471, overwrite = TRUE)

@@ -1,5 +1,31 @@
 # *Changelog for phenotools package*
 
+# phenotools 0.4.0 (04.06.24)
+
+* available_variables() now returns a complete list, including raw MoBa items that can be retrieved (but are not processed)
+* available_variables() now includes the project_specific option, to allow output to be restricted to those variables actually available in a given project, rather than just theoretically available from phenotools. The help pages of available_variables are updated to make clear that this is, in fact, the default behaviour of this function
+* linkage_file_root_dir options in curate_npr and curate_kuhr updated to be source-specific (i.e., npr_linkage_file_root_dir); this is necessary to allow sources to be accessed in the same call 
+* NPR filename and linkage filename defaults updated to reflect latest data in p471
+* New variables added:
+
+    * scl_full_m_14m
+    * scl_anx_m_14m
+    * scl_dep_m_14m
+    * ksq_short_m_14m
+    * ksq_short_f_far2
+    * ksq_short_c_14c
+    * swls_full_m_14m
+
+    See `available_variables()` for details.
+
+# phenotools 0.3.3.9999 (21.05.24)
+
+* Fixed a bug where certain NPR codes could not be retrieved by curate_npr due to an incomplete lists in the package's internal metadata
+
+# phenotools 0.3.3 (17.01.24)
+
+* Added new options to curate_dataset to facilitate checking whether or not individuals have genotype data available
+* Added new options to curate_kuhr and curate_npr to allow a specified date range to be used when retrieving diagnoses
 
 # phenotools 0.3.2 (12.01.24)
 

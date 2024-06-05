@@ -1,10 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-<figure>
-<img src="inst/rstudio/templates/phenotools.png" alt="Phenotools." />
-<figcaption aria-hidden="true">Phenotools.</figcaption>
-</figure>
+![](inst/rstudio/templates/phenotools.png)
 
 # phenotools
 
@@ -23,20 +20,17 @@ with bugs, feedback, or development ideas.
 **phenotools** is built and runs entirely within the
 [TSD](https://www.uio.no/english/services/it/research/sensitive-data/)
 environment, in which MoBa data are accessed for analyses. As such, you
-can’t install the package directly from github. Instead, for
-installation on Windows you should download the binary for the latest
-working version from [here](https://osf.io/6g8bj/files/), import to a
-sensible location in your project in TSD and install in R as follows,
-amending the path and package version appropriately:
+can’t install the package directly from github. Instead, you should
+download the binary for the latest working version from
+[here](https://osf.io/6g8bj/files/), import to a sensible location in
+your project in TSD and install in R as follows, amending the path and
+package version appropriately:
 
 ``` r
 install.packages("//ess01/P471/data/durable/common/software/phenotools_x.y.z.zip", 
                  repos=NULL,
                  type = "binary")
 ```
-
-To install the package on Linux, you should clone this repo, import to
-TSD and install from source.
 
 Depending on the R version you are working with in TSD, any missing
 dependencies may be able to be installed manually from the TSD CRAN

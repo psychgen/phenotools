@@ -23,6 +23,10 @@
 #' @param dx_owners Whose diagnoses do you want to count? Dataset is returned as
 #' one row per pregnancy, but you can get the diagnoses relevant to any
 #' combination of "child", "father", and "mother"; the default is "child"
+#' @param dx_range_limits If you want only to extract diagnoses from a particular
+#' range of available years, provide limits here (e.g., "c(2008,2010)" will retrieve
+#' diagnoses from 2008, 2009, and 2010 only). Defaults to NULL - i.e., extract
+#' from all available data
 #' @param kuhr_full if you already have the KUHR data loaded in memory, you can
 #' save some time by providing the name of the R object here; note
 #' that there are specific requirements for the structure of this file (see
@@ -33,7 +37,7 @@
 #' is for p471)
 #' @param kuhr_filenames_override If the KUHR filenames are not YEAR_Data_KUHR.csv,
 #' what are they?
-#' @param linkage_file_root_dir Where are the linkage files? (default
+#' @param kuhr_linkage_file_root_dir Where are the linkage files? (default
 #' is for p471)
 #' @param kuhr_linkage_filename What is the name of the linkage file? (default
 #' is for p471)
@@ -55,11 +59,12 @@ curate_kuhr <- function(diagnoses,
                         group_all =FALSE,
                         dx_groupname =NULL,
                         dx_owners = c("child"),
+                        dx_range_limits = NULL,
                         kuhr_full = NULL,
                         moba_data_root_dir= "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
                         kuhr_data_root_dir= "//ess01/P471/data/durable/data/KUHR/KUHR_current/DSV files/",
                         kuhr_filenames_override=NULL,
-                        linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/KUHR_link/",
+                        kuhr_linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/KUHR_link/",
                         kuhr_linkage_filename = "PDB2306_kobling_KUHR_mor_far_barn.sav",
                         PDB="2306",
                         moba_data_version = 12,
@@ -134,7 +139,7 @@ currently this function can only run with the primary_care_only argument set to 
 
   message("\nMerging KUHR data with MoBa IDs...")
   #Read in the linkage file, sv_infor, and mbrn
-  link <- haven::read_spss(paste0(linkage_file_root_dir,kuhr_linkage_filename)) %>%
+  link <- haven::read_spss(paste0(kuhr_linkage_file_root_dir,kuhr_linkage_filename)) %>%
     dplyr::select(preg_id = dplyr::matches("preg_id"),
                   m_id = dplyr::matches("M_ID"),
                   f_id = dplyr::matches("f_id"),
@@ -280,6 +285,25 @@ icd10_to_icpc() for your required codes and supply these as inputs to curate_kuh
   ################################
   ## KUHR processing
 
+  #Process date range inputs
+
+  kuhr_yrs = suppressWarnings(suppressMessages(kuhrdata %>%
+    dplyr::mutate(date = lubridate::round_date(lubridate::parse_date_time(MNED,"ym"),unit="month")) %>%
+    tidyr::separate(MNED, into =c("aar","month"), sep = "-")))
+
+  if(is.null(dx_range_limits)){
+    dx_yrs = seq(min(kuhr_yrs$aar),max(kuhr_yrs$aar),1)
+  } else {
+    dx_yrs = seq(dx_range_limits[[1]],dx_range_limits[[2]],1)
+    # Check validity of range:
+    if(min(dx_yrs)<min(kuhr_yrs$aar)|max(dx_yrs)>max(kuhr_yrs$aar)){
+      dx_yrs = seq(min(kuhr_yrs$aar),max(kuhr_yrs$aar),1)
+      warning(paste0("The dx_range_limits you have supplied fall outside the range of years
+            available in the data. Defaulting to all available years (",min(kuhr_yrs$aar), " to ",max(kuhr_yrs$aar),").
+            Re-run and specify years within this range if you want to refine further"))
+    }
+  }
+
   # THree cases: group_all=TRUE, group_all=FALSE, and new_dx (can occur with either of the previous)
 
   # The consistent portion as a function:
@@ -297,6 +321,7 @@ icd10_to_icpc() for your required codes and supply these as inputs to curate_kuh
                                                             dplyr::mutate(other_codes= stringr::str_remove_all(DIAGNOSER, d) ,
                                                                           year=as.numeric(year),
                                                                           month=as.numeric(month))%>%
+                                                            dplyr::filter(year %in% dx_yrs) %>%
                                                             dplyr::group_by(LNr) %>%
                                                             dplyr::arrange(year,month) %>%
                                                             dplyr::summarise(received_dx = "yes",

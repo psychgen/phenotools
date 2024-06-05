@@ -11,14 +11,15 @@ curate_npr(
   group_all = FALSE,
   dx_groupname = NULL,
   dx_owners = c("child"),
+  dx_range_limits = NULL,
   npr_full = NULL,
   npr_preprocessed = NULL,
  
     moba_data_root_dir = "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
   npr_data_root_dir = "//ess01/P471/data/durable/data/NPR/processed/",
-  npr_filename = "18_34161_NPR.sav",
-  linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/NPR_link/",
-  npr_linkage_filename = "PDB2306_kobling_NPR_mor_far_barn.sav",
+  npr_filename = "npr2024.sav",
+  npr_linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/NPR_link/",
+  npr_linkage_filename = "PDB2306_kobling_npr2024_mor_far_barn.sav",
   PDB = "2306",
   moba_data_version = 12,
   moba_filepaths = NULL,
@@ -44,6 +45,11 @@ vareiables pertaining to the grouped diagnoses}
 one row per pregnancy, but you can get the diagnoses relevant to any
 combination of "child", "father", and "mother"; the default is "child"}
 
+\item{dx_range_limits}{If you want only to extract diagnoses from a particular
+range of available years, provide limits here (e.g., "c(2008,2010)" will retrieve
+diagnoses from 2008, 2009, and 2010 only). Defaults to NULL - i.e., extract
+from all available data}
+
 \item{npr_full}{if you already have the NPR data loaded in memory, you can
 save some time by providing the name of the R object here; note
 that there are specific requirements for the structure of this file (see
@@ -63,7 +69,7 @@ is for p471)}
 \item{npr_filename}{What is the name of the NPR file? (default
 is for p471)}
 
-\item{linkage_file_root_dir}{Where is the linkage file? (default
+\item{npr_linkage_file_root_dir}{Where is the linkage file? (default
 is for p471)}
 
 \item{npr_linkage_filename}{What is the name of the linkage file? (default
@@ -104,7 +110,7 @@ meeting these conditions for use with phenotools.
 
 The next step, prior to processing diagnoses, is to link with MoBa IDs. Again,
 the function will do this automatically if the linkage file (specified via
- \code{npr_linkage_filename} and \code{linkage_file_root_dir}) is in the standard
+ \code{npr_linkage_filename} and \code{npr_linkage_file_root_dir}) is in the standard
  format, i.e., containing linkage information for all members of family trios
  with the columns preg_id, m_id, f_id (all case insensitive), BARN_NR, LNr, and
  the variable SUPtype (case insensitive) - which is either "child", "mother",

@@ -41,7 +41,17 @@
 #'  you will need to provide filenames for these (as well as the questionnaire files
 #'  from which your variables are to be sourced) if they differ from the expected format
 #'  is a reminder that these sources
-#' @param ... arguments to pass to internal functions, see ?curate_moba_scales
+#'  @param flag_genetics Defaults to TRUE, which includes an indicator variable
+#'  for who, in a given pregnancy trio, has genetic data available (C = child,
+#'  M = mother, F = father). Relies on the availability of a file with genetic and
+#'  phenotypic IDs, indicated by genetic_id_file
+#'  @param genetic_id_file Filepath to a txt file with IDs of MoBa individuals with genetic
+#'  data available, with the variables "ID_>project number<" (where the values are
+#'  pregid_BARNNR when the individual is a MoBa child, M_ID when the individual is
+#'  a MoBa mother, and F_ID when the individual is a MoBa father) and Role (where
+#'  the values are "Child", "Mother", and "Father"). This is the default format of
+#'  the covariate file produced by the MoBaPsychGen v1 QC pipeline
+#'  @param ... arguments to pass to internal functions, see ?curate_moba_scales
 #' and ?curate_npr
 #' @export
 #' @importFrom dplyr "%>%"
@@ -82,6 +92,8 @@ curate_dataset <- function(variables_required,
                            log=NULL,
                            out_format = "list",
                            override_filenames = NULL,
+                           flag_genetics = TRUE,
+                           genetic_id_file="//ess01/P471/data/durable/data/genetic/MoBaPsychGen_v1/MoBaPsychGen_v1-ec-eur-batch-basic-qc-cov.txt",
                            ...){
 
   ################
@@ -95,7 +107,7 @@ Either install it or re-run with log=NULL.")
     }
 
     suppressMessages <- function(x){x}
-   # suppressWarnings <- function(x){x}
+    # suppressWarnings <- function(x){x}
 
     # Open log
     logr::log_open(log, autolog = TRUE, show_notes = TRUE)
@@ -140,10 +152,10 @@ Either install it or re-run with log=NULL.")
 
   if(!is.list(variables_required)){
 
-        ##Pull out any "new" variables
-    if (length(variables_required[(!variables_required %in% suppressMessages(available_variables("moba")$var_name))])>=1 ){
+    ##Pull out any "new" variables
+    if (length(variables_required[(!variables_required %in% suppressMessages(available_variables("moba", include_unprocessed =F )$var_name))])>=1 ){
 
-      new_vars <- variables_required[(!variables_required %in% suppressMessages(available_variables("moba")$var_name))]
+      new_vars <- variables_required[(!variables_required %in% suppressMessages(available_variables("moba", include_unprocessed =F)$var_name))]
       moba_new_vars <- sapply(new_vars,moba_item_finder) %>%
         tibble::enframe() %>%
         `colnames<-`(c("var_name", "questionnaire")) %>%
@@ -171,13 +183,13 @@ For a list of valid pre-processed variable names run avaliable_variables(source 
     }
 
     if(exists("moba_new_vars")){
-      reqd_vars <- suppressMessages(available_variables(source = c("moba"))) %>%
+      reqd_vars <- suppressMessages(available_variables(source = c("moba"), include_unprocessed =F)) %>%
         dplyr::filter(var_name %in% variables_required) %>%
-        dplyr::bind_rows(suppressMessages(available_variables()) %>%
+        dplyr::bind_rows(suppressMessages(available_variables(include_unprocessed =F)) %>%
                            dplyr::filter(is.null(var_name)) %>%
                            dplyr::bind_rows(moba_new_vars))
     }else {
-      reqd_vars <- suppressMessages(available_variables(source = c("moba"))) %>%
+      reqd_vars <- suppressMessages(available_variables(source = c("moba"), include_unprocessed =F)) %>%
         dplyr::filter(var_name %in% variables_required)
     }
 
@@ -194,12 +206,12 @@ variables_required as a vector, without names. Otherwise, name your list element
 according to the data source from which the variables come (see vignette(\"phenotools\") for details).")
     }
     #check that names are recognizable
-    if(any(!names(variables_required) %in% suppressMessages(unique(available_variables()$source)) )){
+    if(any(!names(variables_required) %in% suppressMessages(unique(available_variables( include_unprocessed =F)$source)) )){
       stop(paste0("List elements in variables_required must be named according to source.
 
 Run unique(available_variables()$source) to see how to specify source names.
 
-Unrecognised source names: ", names(variables_required)[!names(variables_required) %in% suppressMessages(unique(available_variables()$source))]) )
+Unrecognised source names: ", names(variables_required)[!names(variables_required) %in% suppressMessages(unique(available_variables( include_unprocessed =F)$source))]) )
     }
 
     #unlist the inputs
@@ -210,19 +222,19 @@ Unrecognised source names: ", names(variables_required)[!names(variables_require
       dplyr::mutate(source=stringr::str_remove_all(source, "[:digit:]"))
 
     #process new variables if they exist
-    if (length(variables_required$var_name[(!variables_required$var_name %in% suppressMessages(available_variables()$var_name))])>=1 ){
+    if (length(variables_required$var_name[(!variables_required$var_name %in% suppressMessages(available_variables(include_unprocessed =F)$var_name))])>=1 ){
 
-      new_vars <- variables_required %>%  dplyr::filter(!var_name %in% suppressMessages(available_variables()$var_name))
-      variables_required <-  variables_required %>%  dplyr::filter(var_name %in% suppressMessages(available_variables()$var_name))
-      new_vars_processed <- suppressMessages(available_variables() %>% dplyr::filter(is.null(var_name)))
+      new_vars <- variables_required %>%  dplyr::filter(!var_name %in% suppressMessages(available_variables(include_unprocessed =F)$var_name))
+      variables_required <-  variables_required %>%  dplyr::filter(var_name %in% suppressMessages(available_variables(include_unprocessed =F)$var_name))
+      new_vars_processed <- suppressMessages(available_variables(include_unprocessed =F) %>% dplyr::filter(is.null(var_name)))
 
-           # npr/kuhr code combinations
+      # npr/kuhr code combinations
       if(any(stringr::str_detect(new_vars$var_name,"="))){
         code_combo_new_vars <- dplyr::tibble(measure = rep("new",length(new_vars$var_name[stringr::str_detect(new_vars$var_name,"=")])),
-                                      subscale = rep(NA,length(new_vars$var_name[stringr::str_detect(new_vars$var_name,"=")])),
-                                      questionnaire = rep(NA,length(new_vars$var_name[stringr::str_detect(new_vars$var_name,"=")])),
-                                      var_name = new_vars$var_name[stringr::str_detect(new_vars$var_name,"=")],
-                                      source = new_vars %>% dplyr:: filter(stringr::str_detect(new_vars$var_name,"=")) %>% .$source)
+                                             subscale = rep(NA,length(new_vars$var_name[stringr::str_detect(new_vars$var_name,"=")])),
+                                             questionnaire = rep(NA,length(new_vars$var_name[stringr::str_detect(new_vars$var_name,"=")])),
+                                             var_name = new_vars$var_name[stringr::str_detect(new_vars$var_name,"=")],
+                                             source = new_vars %>% dplyr:: filter(stringr::str_detect(new_vars$var_name,"=")) %>% .$source)
         new_vars <- new_vars %>%  dplyr::filter(!stringr::str_detect(var_name,"="))
         new_vars_processed <- new_vars_processed %>%
           dplyr::bind_rows(code_combo_new_vars)
@@ -236,7 +248,7 @@ source(s):",new_vars %>% dplyr::filter(source!="moba") %>% .$source,"; check you
       #MoBa specific item codes
       if(length(new_vars$var_name)>0){
 
-         moba_new_vars <- sapply(new_vars$var_name,moba_item_finder) %>%
+        moba_new_vars <- sapply(new_vars$var_name,moba_item_finder) %>%
           tibble::enframe() %>%
           `colnames<-`(c("var_name", "questionnaire")) %>%
           dplyr::mutate(measure = ifelse(!is.na(questionnaire),"single_item",NA),
@@ -260,11 +272,11 @@ For a list of valid pre-processed variable names run avaliable_variables(), or c
 
     #make reqd_vars (with new_vars_processed if exists)
     if(exists("new_vars_processed")){
-      reqd_vars <- suppressMessages(available_variables(source = c("moba","npr","kuhr"))) %>%
+      reqd_vars <- suppressMessages(available_variables(source = c("moba","npr","kuhr"),include_unprocessed =F)) %>%
         dplyr::filter(var_name %in% variables_required$var_name & source %in% variables_required$source) %>%
         dplyr::bind_rows(new_vars_processed)
     }else {
-      reqd_vars <- suppressMessages(available_variables(source = c("moba","npr","kuhr"))) %>%
+      reqd_vars <- suppressMessages(available_variables(source = c("moba","npr","kuhr"),include_unprocessed =F)) %>%
         dplyr::filter(var_name %in% variables_required$var_name & source %in% variables_required$source)
     }
 
@@ -366,7 +378,7 @@ called by either the asq_ or cdi_ prefix for consistency with both MoBa document
 source of the items.") )}
 
 
-   ##Create data.frame of PREG_IDs to aggregate created variables
+    ##Create data.frame of PREG_IDs to aggregate created variables
     mbrn <-
       haven::read_spss(moba_filepaths %>% dplyr::filter(questionnaire=="MBRN") %>% .$filepath ) %>%
       dplyr::select(preg_id = dplyr::matches("PREG_ID"),BARN_NR,birth_yr =FAAR) %>%
@@ -500,7 +512,7 @@ source of the items.") )}
 
 
 
-  # Implement return preferences
+    # Implement return preferences
 
     if(return_items==T & nrow(moba_scale_vars)>0){
       moba_data_combined <-
@@ -515,8 +527,8 @@ source of the items.") )}
                                                       dplyr::select(preg_id,m_id,f_id,BARN_NR,birth_yr,dplyr::matches("_raw|_coded"))))))
       if(out_format == "list"){
 
-      message(
-        "\nYou requested that scale items be returned (using return_items=TRUE), so
+        message(
+          "\nYou requested that scale items be returned (using return_items=TRUE), so
 output is a list, of which the first element (\"scales\") is your scale-level
 dataset, and the second (\"items\")is your item-level dataset, with \"_raw\" and
 \"_coded\" (i.e., numeric) versions of all items for each scale.")
@@ -526,8 +538,8 @@ dataset, and the second (\"items\")is your item-level dataset, with \"_raw\" and
         moba_data_combined <- moba_data_combined %>%
           purrr::reduce(dplyr::full_join, by=c("preg_id","BARN_NR","m_id","f_id"))
 
-      message(
-        "\nYou requested that scale items be returned (using return_items=TRUE)
+        message(
+          "\nYou requested that scale items be returned (using return_items=TRUE)
 and that the output be a 'merged_df', so your item-level dataset, with \"_raw\" and
 \"_coded\" (i.e., numeric) versions of all items for each scale, has been joined
 to your main dataset.")
@@ -577,9 +589,9 @@ curate_npr().")
             dplyr::filter(source =="npr")))
 
 
-        npr_data_combined <- curate_npr(diagnoses = npr_vars$var_name,
-                                        moba_filepaths = moba_filepaths,
-                                        ...)
+    npr_data_combined <- curate_npr(diagnoses = npr_vars$var_name,
+                                    moba_filepaths = moba_filepaths,
+                                    ...)
 
 
     message("\nNPR dataset curation complete.")
@@ -623,11 +635,82 @@ curate_kuhr().")
   }
 
 
+  ### Add genetic data flags if requested
+
+
+  if(flag_genetics==TRUE){
+
+    if(file.exists(genetic_id_file)){
+
+      covs <- readr::read_tsv(genetic_id_file, col_types = readr::cols(.default = "c")) %>%
+        dplyr::select(id_moba = dplyr::matches("ID_",ignore.case = FALSE), Role) %>%
+        dplyr::mutate(preg_id_BARN_NR = ifelse(Role =="Child", id_moba,NA),
+                      f_id = ifelse(Role == "Father",id_moba,NA),
+                      m_id = ifelse(Role == "Mother",id_moba,NA)) %>%
+        tidyr::separate(preg_id_BARN_NR, into=c("preg_id", "BARN_NR"), sep="_")
+
+
+      all_data_combined <- suppressMessages(purrr::map(all_data_combined, function(x){
+        if(length(x)==2){ #i.e., if return_items has been set to T and moba element has scales and items sub-elements
+          tmp<- purrr::map(x, function(x2){
+            tmp_inner <- x2 %>%
+              dplyr::left_join(covs %>%
+                                 dplyr::filter(Role=="Child") %>%
+                                 dplyr::select(preg_id, BARN_NR) %>%
+                                 dplyr::mutate(geno_child=T,
+                                               BARN_NR= as.double(BARN_NR))) %>%
+              dplyr::left_join(covs %>%
+                                 dplyr::filter(Role=="Mother") %>%
+                                 dplyr::select(m_id) %>%
+                                 dplyr::mutate(geno_mother=T)) %>%
+              dplyr::left_join(covs %>%
+                                 dplyr::filter(Role=="Father") %>%
+                                 dplyr::select(f_id) %>%
+                                 dplyr::mutate(geno_father=T)) %>%
+              return(tmp_inner)
+
+          })
+          return(tmp)
+        } else {
+          tmp <- x %>%
+            dplyr::left_join(covs %>%
+                               dplyr::filter(Role=="Child") %>%
+                               dplyr::select(preg_id, BARN_NR) %>%
+                               dplyr::mutate(geno_child=T,
+                                             BARN_NR= as.double(BARN_NR))) %>%
+            dplyr::left_join(covs %>%
+                               dplyr::filter(Role=="Mother") %>%
+                               dplyr::select(m_id) %>%
+                               dplyr::mutate(geno_mother=T)) %>%
+            dplyr::left_join(covs %>%
+                               dplyr::filter(Role=="Father") %>%
+                               dplyr::select(f_id) %>%
+                               dplyr::mutate(geno_father=T)) %>%
+            return(tmp)
+        }
+
+      }
+      ))
+
+
+
+    } else {
+
+      warning(paste0("You set flag_genetics to TRUE, but phenotools could not find the genetic_id_file you specified: ",genetic_id_file,"
+                     The dataset has been returned without a variable indicating whether individuals have genetic data. Check your
+                     specification of genetic_id_file and try again"))
+      flag_genetics=FALSE
+
+    }
+
+  }
+
+
   message("\nCurating the final dataset(s)...")
 
   if(out_format == "merged_df"){
 
-      all_data_combined <- all_data_combined %>%
+    all_data_combined <- all_data_combined %>%
       purrr::reduce(dplyr::full_join)
   }
   message("\nDataset curation complete.")

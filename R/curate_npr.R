@@ -24,7 +24,7 @@
 #'
 #' The next step, prior to processing diagnoses, is to link with MoBa IDs. Again,
 #' the function will do this automatically if the linkage file (specified via
-#'  \code{npr_linkage_filename} and \code{linkage_file_root_dir}) is in the standard
+#'  \code{npr_linkage_filename} and \code{npr_linkage_file_root_dir}) is in the standard
 #'  format, i.e., containing linkage information for all members of family trios
 #'  with the columns preg_id, m_id, f_id (all case insensitive), BARN_NR, LNr, and
 #'  the variable SUPtype (case insensitive) - which is either "child", "mother",
@@ -46,6 +46,10 @@
 #' @param dx_owners Whose diagnoses do you want to count? Dataset is returned as
 #' one row per pregnancy, but you can get the diagnoses relevant to any
 #' combination of "child", "father", and "mother"; the default is "child"
+#' @param dx_range_limits If you want only to extract diagnoses from a particular
+#' range of available years, provide limits here (e.g., "c(2008,2010)" will retrieve
+#' diagnoses from 2008, 2009, and 2010 only). Defaults to NULL - i.e., extract
+#' from all available data
 #' @param npr_full if you already have the NPR data loaded in memory, you can
 #' save some time by providing the name of the R object here; note
 #' that there are specific requirements for the structure of this file (see
@@ -60,7 +64,7 @@
 #' is for p471)
 #' @param npr_filename What is the name of the NPR file? (default
 #' is for p471)
-#' @param linkage_file_root_dir Where is the linkage file? (default
+#' @param npr_linkage_file_root_dir Where is the linkage file? (default
 #' is for p471)
 #' @param npr_linkage_filename What is the name of the linkage file? (default
 #' is for p471). Required variables are: LNr (link number); M_ID_>PDB< (maternal ID);
@@ -82,13 +86,14 @@ curate_npr <- function(diagnoses,
                        group_all =FALSE,
                        dx_groupname =NULL,
                        dx_owners = c("child"),
+                       dx_range_limits = NULL,
                        npr_full = NULL,
                        npr_preprocessed = NULL,
                        moba_data_root_dir= "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
                        npr_data_root_dir= "//ess01/P471/data/durable/data/NPR/processed/",
-                       npr_filename="18_34161_NPR.sav",
-                       linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/NPR_link/",
-                       npr_linkage_filename = "PDB2306_kobling_NPR_mor_far_barn.sav",
+                       npr_filename="npr2024.sav",
+                       npr_linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/NPR_link/",
+                       npr_linkage_filename = "PDB2306_kobling_npr2024_mor_far_barn.sav",
                        PDB="2306",
                        moba_data_version = 12,
                        moba_filepaths= NULL,
@@ -168,7 +173,7 @@ curate_npr <- function(diagnoses,
 
     message("\nMerging NPR data with MoBa IDs...")
     #Read in the linkage file, sv_infor, and mbrn
-    link <- haven::read_spss(paste0(linkage_file_root_dir,npr_linkage_filename)) %>%
+    link <- haven::read_spss(paste0(npr_linkage_file_root_dir,npr_linkage_filename)) %>%
       dplyr::select(preg_id = dplyr::matches("preg_id"),
                     m_id = dplyr::matches("M_ID"),
                     f_id = dplyr::matches("f_id"),
@@ -355,13 +360,29 @@ curate_npr <- function(diagnoses,
   ################################
   ## NPR processing
 
-  # THree cases: group_all=TRUE, group_all=FALSE, and new_dx (can occur with either of the previous)
+  # Implement date range
+
+  if(is.null(dx_range_limits)){
+    dx_yrs = seq(min(npr_full$aar),max(npr_full$aar),1)
+  } else {
+    dx_yrs = seq(dx_range_limits[[1]],dx_range_limits[[2]],1)
+    # Check validity of range:
+    if(min(dx_yrs)<min(npr_full$aar)|max(dx_yrs)>max(npr_full$aar)){
+      dx_yrs = seq(min(npr_full$aar),max(npr_full$aar),1)
+      warning(paste0("The dx_range_limits you have supplied fall outside the range of years
+            available in the data. Defaulting to all available years (",min(npr_full$aar), " to ",max(npr_full$aar),").
+            Re-run and specify years within this range if you want to refine further"))
+    }
+  }
+
+  # Three cases: group_all=TRUE, group_all=FALSE, and new_dx (can occur with either of the previous)
 
   # The consistent portion as a function:
 
   process_npr <- function (d){
     npr_reduced_tmp <- suppressMessages(npr_full %>%
                                           dplyr::filter_at(dplyr::vars(tidyr::starts_with("tilst")), dplyr::any_vars( stringr::str_detect(. ,d))) %>%
+                                          dplyr::filter(aar %in% dx_yrs) %>%
                                           dplyr::left_join(npr_link_moba %>%
                                                              dplyr::select(LNr, FAAR,dx_owner) %>%
                                                              dplyr::distinct())) %>%

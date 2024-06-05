@@ -4,18 +4,34 @@
 \alias{available_variables}
 \title{Available variables}
 \usage{
-available_variables(source = c("moba", "npr", "kuhr"))
+available_variables(
+  source = c("moba", "npr", "kuhr"),
+  include_unprocessed = T,
+  project_specific = NULL
+)
 }
 \arguments{
 \item{source}{Currently any combination of "moba", "kuhr", "npr}
+
+\item{include_unprocessed}{Should raw MoBa questionnaire items that can be
+retrieved be included in the output? Defaults to TRUE}
+
+\item{project_specific}{Should output be filtered based on what is actually
+available in the project in which you are working? Defaults to NULL - i.e.,
+output is all variables theoretically retrievable by phenotools. Alternatives
+are: "p471" (uses an internally-stored list of variables available in the
+p471 project in which phenotools is developed) or a filepath to a .csv file
+with (at least) a "var_name" column listing all variables and diagnostic
+codes (e.g., from NPR or KUHR) available in the project in which you are
+working.}
 }
 \value{
 a data.frame with variable names and basic info
 }
 \description{
 \code{available_variables} returns a dataframe with names and basic info
-of all variables available for use via phenotools
-}
-\details{
-Detailed description...
+of all variables theoretically available for retrieval via phenotools (actual
+availability depends upon the source datafiles in your project - use the
+\code{project_specific} option and/or speak to your project administrator
+to find out what should be available to you).
 }
