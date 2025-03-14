@@ -41,17 +41,17 @@
 #'  you will need to provide filenames for these (as well as the questionnaire files
 #'  from which your variables are to be sourced) if they differ from the expected format
 #'  is a reminder that these sources
-#'  @param flag_genetics Defaults to TRUE, which includes an indicator variable
+#' @param flag_genetics Defaults to TRUE, which includes an indicator variable
 #'  for who, in a given pregnancy trio, has genetic data available (C = child,
 #'  M = mother, F = father). Relies on the availability of a file with genetic and
 #'  phenotypic IDs, indicated by genetic_id_file
-#'  @param genetic_id_file Filepath to a txt file with IDs of MoBa individuals with genetic
+#' @param genetic_id_file Filepath to a txt file with IDs of MoBa individuals with genetic
 #'  data available, with the variables "ID_>project number<" (where the values are
 #'  pregid_BARNNR when the individual is a MoBa child, M_ID when the individual is
 #'  a MoBa mother, and F_ID when the individual is a MoBa father) and Role (where
 #'  the values are "Child", "Mother", and "Father"). This is the default format of
 #'  the covariate file produced by the MoBaPsychGen v1 QC pipeline
-#'  @param ... arguments to pass to internal functions, see ?curate_moba_scales
+#' @param ... arguments to pass to internal functions, see ?curate_moba_scales
 #' and ?curate_npr
 #' @export
 #' @importFrom dplyr "%>%"
@@ -132,6 +132,7 @@ Either install it or re-run with log=NULL.")
   if (!exists("variables_required") ){
     stop(paste0("No variable(s) specified in 'variables_required'.\n\nFor a list of valid variable names run avaliable_variables()"))
   }
+
 
   ## Function to find MoBa items
 
@@ -263,7 +264,7 @@ source(s):",new_vars %>% dplyr::filter(source!="moba") %>% .$source,"; check you
       if(any(is.na(new_vars_processed$source))){
         stop(paste0("Cannot find a source for variable(s): ", new_vars_processed %>% dplyr::filter(is.na(source)) %>% .$var_name, "
 Did you mistype a variable name? If you think this variable should be available, please contact lauriejhannigan@gmail.com.
-For a list of valid pre-processed variable names run avaliable_variables(), or check the MoBa wiki for valid item codes.") )
+For a list of valid pre-processed variable names run avaliable_variables(), or check the MoBa documentation for valid item codes.") )
       }
 
 

@@ -20,7 +20,7 @@
 #' for the purpose of summarising; defaults to FALSE
 #' @param dx_groupname If group_all is TRUE, this string is used to label the
 #' vareiables pertaining to the grouped diagnoses
-#' @param dx_owners Whose diagnoses do you want to count? Dataset is returned as
+#' @param dx_recipent Whose diagnoses do you want to count? Dataset is returned as
 #' one row per pregnancy, but you can get the diagnoses relevant to any
 #' combination of "child", "father", and "mother"; the default is "child"
 #' @param dx_range_limits If you want only to extract diagnoses from a particular
@@ -58,7 +58,7 @@ curate_kuhr <- function(diagnoses,
                         exclusions=NULL,
                         group_all =FALSE,
                         dx_groupname =NULL,
-                        dx_owners = c("child"),
+                        dx_recipient = c("child"),
                         dx_range_limits = NULL,
                         kuhr_full = NULL,
                         moba_data_root_dir= "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
@@ -141,20 +141,21 @@ currently this function can only run with the primary_care_only argument set to 
   #Read in the linkage file, sv_infor, and mbrn
   link <- haven::read_spss(paste0(kuhr_linkage_file_root_dir,kuhr_linkage_filename)) %>%
     dplyr::select(preg_id = dplyr::matches("preg_id"),
+                  BARN_NR,
                   m_id = dplyr::matches("M_ID"),
                   f_id = dplyr::matches("f_id"),
-                  BARN_NR,
                   dx_owner = SUP_Type,
                   LNr = PID_NPR_2306)%>%
     dplyr::mutate(f_id = stringr::str_replace_all(f_id, stringr::fixed(" "), ""),
                   m_id = stringr::str_replace_all(m_id, stringr::fixed(" "), ""),
                   dx_owner = tolower(stringr::str_remove(dx_owner, "SU2PT_"))) %>%
-    dplyr::na_if("")
+    dplyr::mutate_if(is.character, dplyr::na_if, "")
 
   if(exists("moba_filepaths")){
     mbrn <-
       haven::read_spss(moba_filepaths %>% dplyr::filter(questionnaire=="MBRN") %>% .$filepath ) %>%
-      dplyr::select(preg_id = dplyr::matches("PREG_ID"),BARN_NR,FAAR)
+      dplyr::select(preg_id = dplyr::matches("PREG_ID"),BARN_NR,FAAR) %>%
+      dplyr::mutate(BARN_NR=ifelse(is.na(BARN_NR),1,BARN_NR))
     ##Add M_ID and F_ID variables from SV info
     sv_info <-
       haven::read_spss(moba_filepaths %>% dplyr::filter(questionnaire=="SV_INFO") %>% .$filepath )%>%
@@ -163,11 +164,12 @@ currently this function can only run with the primary_care_only argument set to 
                     f_id = dplyr::matches("f_id") )%>%
       dplyr::mutate(f_id = stringr::str_replace_all(f_id, stringr::fixed(" "), ""),
                     m_id = stringr::str_replace_all(m_id, stringr::fixed(" "), "")) %>%
-      dplyr::na_if("")
+      dplyr::mutate_if(is.character, dplyr::na_if, "")
 
   }else{
     mbrn <- haven::read_spss(paste0(moba_data_root_dir,"PDB",PDB,"_MBRN_541_v",moba_data_version,".sav")) %>%
-      dplyr::select(preg_id = dplyr::matches("PREG_ID"),BARN_NR,FAAR)
+      dplyr::select(preg_id = dplyr::matches("PREG_ID"),BARN_NR,FAAR)%>%
+      dplyr::mutate(BARN_NR=ifelse(is.na(BARN_NR),1,BARN_NR))
 
     sv_info <- haven::read_spss(paste0(moba_data_root_dir,"PDB",PDB,"_SV_INFO_v",moba_data_version,".sav")) %>%
       dplyr::select(preg_id = dplyr::matches("preg_id"),
@@ -175,7 +177,7 @@ currently this function can only run with the primary_care_only argument set to 
                     f_id = dplyr::matches("f_id") )%>%
       dplyr::mutate(f_id = stringr::str_replace_all(f_id, stringr::fixed(" "), ""),
                     m_id = stringr::str_replace_all(m_id, stringr::fixed(" "), "")) %>%
-      dplyr::na_if("")
+      dplyr::mutate_if(is.character, dplyr::na_if, "")
 
   }
 
@@ -410,24 +412,25 @@ Resulting variables will be labelled with ", if(!is.null(dx_groupname)){dx_group
 
 
     kuhr_processed <- kuhr_processed %>%
-      dplyr::filter(dx_owner %in% dx_owners) %>%
+      dplyr::filter(dx_owner %in% dx_recipient) %>%
       dplyr::mutate_at(dplyr::vars(dplyr::contains("received_dx")),
                        list( ~ dplyr::case_when(!is.na(LNr)&is.na(.) ~ "no",
                                                   !is.na(LNr)&!is.na(.) ~ "yes",
                                                   is.na(LNr) ~ .))) %>%
       dplyr::select(-LNr) %>%
       dplyr::mutate(preg_id = as.character(preg_id)) %>%
-      dplyr::rename(birth_yr = FAAR)
+      dplyr::rename(birth_yr = FAAR,
+                    dx_recipient = dx_owner)
 
-    if(length(dx_owners)>1){
+    if(length(dx_recipient)>1){
 
       kuhr_processed <- suppressMessages(suppressWarnings(kuhr_processed %>%
-                                                            tidyr::gather(key=var_type, val=val, -preg_id:-dx_owner) %>%
-                                                            tidyr::unite(var_type_owner, c("var_type","dx_owner")) %>%
+                                                            tidyr::gather(key=var_type, val=val, -preg_id:-dx_recipient) %>%
+                                                            tidyr::unite(var_type_owner, c("var_type","dx_recipient")) %>%
                                                             tidyr::spread(var_type_owner, val)))
     }
 
-    if(any(stringr::str_detect(dx_owners, "mother|father"))){
+    if(any(stringr::str_detect(dx_recipient, "mother|father"))){
       message(
         "\nRemember, this dataset has one row per MoBa child (unique by a comination of
 preg_id and BARN_NR). Therefore, counts of parental diagnoses based on these data
@@ -443,7 +446,9 @@ need to restrict to unique m_id/f_ids.")
     if(exists("kuhr_link_moba")){
       rm(kuhr_link_moba)
     }
-message("\nKUHR data processing complete.")
+    message(paste0("\nKUHR data processing complete. Diagnoses retrieved for the following recipients: ",paste0(dx_recipient, collapse=", "),"
+  \n If you were expecting diagnoses for additional recipients, check that you have correctly specified the 'dx_recipient'
+  argument in your input (NB that this argument was renamed from 'dx_owners' in version 0.4.1.)"))
 
     return(kuhr_processed)
 

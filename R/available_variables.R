@@ -77,7 +77,7 @@ available_variables <- function(source=c("moba","npr","kuhr"),
       message("Filtering output to variables available in p471...")
 
       all_avail <- all_avail %>%
-        dplyr::right_join(phenotools::p471)
+        dplyr::inner_join(phenotools::p471)
 
 
     }else if(stringr::str_detect(project_specific,".csv")){

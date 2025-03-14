@@ -1,7 +1,7 @@
 Package: phenotools
 Type: Package
 Title: Facilitates Reproducible Workflows With Data from MoBa and Linked Registry Sources
-Version: 0.4.0
+Version: 0.4.1
 Authors@R: person("Laurie", "Hannigan", email = "lauriejhannigan@gmail.com",
                   role = c("aut", "cre"))
 Description: The main goal of the **phenotools** package is to facilitate efficient and reproducible use of phenotypic data from MoBa and linked registry sources in the TSD environment.
@@ -22,5 +22,6 @@ Imports:
     tidyr,
     haven, 
     tibble,
-    readr
+    readr,
+    tidyselect
 VignetteBuilder: knitr

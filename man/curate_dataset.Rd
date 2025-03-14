@@ -57,18 +57,21 @@ override this because the filenames have been altered in your TSD project, add
  The SV_INFO and MBRN files are accessed implicitly for every curate call, so
  you will need to provide filenames for these (as well as the questionnaire files
  from which your variables are to be sourced) if they differ from the expected format
- is a reminder that these sources
- @param flag_genetics Defaults to TRUE, which includes an indicator variable
- for who, in a given pregnancy trio, has genetic data available (C = child,
- M = mother, F = father). Relies on the availability of a file with genetic and
- phenotypic IDs, indicated by genetic_id_file
- @param genetic_id_file Filepath to a txt file with IDs of MoBa individuals with genetic
- data available, with the variables "ID_>project number<" (where the values are
- pregid_BARNNR when the individual is a MoBa child, M_ID when the individual is
- a MoBa mother, and F_ID when the individual is a MoBa father) and Role (where
- the values are "Child", "Mother", and "Father"). This is the default format of
- the covariate file produced by the MoBaPsychGen v1 QC pipeline
- @param ... arguments to pass to internal functions, see ?curate_moba_scales
+ is a reminder that these sources}
+
+\item{flag_genetics}{Defaults to TRUE, which includes an indicator variable
+for who, in a given pregnancy trio, has genetic data available (C = child,
+M = mother, F = father). Relies on the availability of a file with genetic and
+phenotypic IDs, indicated by genetic_id_file}
+
+\item{genetic_id_file}{Filepath to a txt file with IDs of MoBa individuals with genetic
+data available, with the variables "ID_>project number<" (where the values are
+pregid_BARNNR when the individual is a MoBa child, M_ID when the individual is
+a MoBa mother, and F_ID when the individual is a MoBa father) and Role (where
+the values are "Child", "Mother", and "Father"). This is the default format of
+the covariate file produced by the MoBaPsychGen v1 QC pipeline}
+
+\item{...}{arguments to pass to internal functions, see ?curate_moba_scales
 and ?curate_npr}
 }
 \description{

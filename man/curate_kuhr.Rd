@@ -12,7 +12,7 @@ curate_kuhr(
   exclusions = NULL,
   group_all = FALSE,
   dx_groupname = NULL,
-  dx_owners = c("child"),
+  dx_recipient = c("child"),
   dx_range_limits = NULL,
   kuhr_full = NULL,
  
@@ -50,10 +50,6 @@ for the purpose of summarising; defaults to FALSE}
 \item{dx_groupname}{If group_all is TRUE, this string is used to label the
 vareiables pertaining to the grouped diagnoses}
 
-\item{dx_owners}{Whose diagnoses do you want to count? Dataset is returned as
-one row per pregnancy, but you can get the diagnoses relevant to any
-combination of "child", "father", and "mother"; the default is "child"}
-
 \item{dx_range_limits}{If you want only to extract diagnoses from a particular
 range of available years, provide limits here (e.g., "c(2008,2010)" will retrieve
 diagnoses from 2008, 2009, and 2010 only). Defaults to NULL - i.e., extract
@@ -86,6 +82,10 @@ is for p471)}
 12}
 
 \item{moba_filepaths}{Allows curate_dataset to pass on an amended list of filepaths}
+
+\item{dx_recipent}{Whose diagnoses do you want to count? Dataset is returned as
+one row per pregnancy, but you can get the diagnoses relevant to any
+combination of "child", "father", and "mother"; the default is "child"}
 }
 \description{
 \code{curate_kuhr} is called by \code{curate_dataset}

@@ -10,7 +10,7 @@ curate_npr(
   exclusions = NULL,
   group_all = FALSE,
   dx_groupname = NULL,
-  dx_owners = c("child"),
+  dx_recipient = c("child"),
   dx_range_limits = NULL,
   npr_full = NULL,
   npr_preprocessed = NULL,
@@ -41,7 +41,7 @@ for the purpose of summarising; defaults to FALSE}
 \item{dx_groupname}{If group_all is TRUE, this string is used to label the
 vareiables pertaining to the grouped diagnoses}
 
-\item{dx_owners}{Whose diagnoses do you want to count? Dataset is returned as
+\item{dx_recipient}{Whose diagnoses do you want to count? Dataset is returned as
 one row per pregnancy, but you can get the diagnoses relevant to any
 combination of "child", "father", and "mother"; the default is "child"}
 

@@ -188,7 +188,7 @@ mydata <- curate_dataset(variables_required=list(moba = c("scl_anx_m_3yr","bmi_d
                          recursive=TRUE,
                          group_all=TRUE,
                          dx_groupname="ourdiagnoses",
-                         dx_owner="child") 
+                         dx_recipient="child") 
 
 str(mydata, vec.len = 0)
 
@@ -224,7 +224,7 @@ mydata <- curate_dataset(variables_required=list(moba = c("scl_anx_m_3yr","bmi_d
                          recursive=TRUE,
                          group_all=TRUE,  # This is essentially ignored here, as we gave details of the groupings in the npr_groups strings
                          dx_groupname=NULL,# This is essentially ignored here, as we gave details of the groupings in the npr_groups strings
-                         dx_owner="child",
+                         dx_recipient="child",
                          npr_full=npr_full) 
 
 str(mydata, vec.len = 0)
@@ -232,7 +232,7 @@ str(mydata, vec.len = 0)
 
 ```
 
-A note on working with the output from `curate_npr` (generated via the above `curate_dataset` calls): the dataframe returned as standard contains one row per MoBa child (unique by a combination of preg_id and BARN_NR). However, often the child (or their parent, if that is who you selected as the `dx_owner`) will have had mulitple healthcare contacts for your requested (groups of) diagnoses. Information about these multiple contacts is preserved in the variables `all_dx` variables, but these are tricky to use in their standard form. If you *are* interested in this information, you can use the `pivot_curated_npr` function to convert the result of a `curate_npr` call back into a dataset that has one row per contact per diagnosis (/diagnosis grouping):
+A note on working with the output from `curate_npr` (generated via the above `curate_dataset` calls): the dataframe returned as standard contains one row per MoBa child (unique by a combination of preg_id and BARN_NR). However, often the child (or their parent, if that is who you selected as the `dx_recipient`) will have had mulitple healthcare contacts for your requested (groups of) diagnoses. Information about these multiple contacts is preserved in the variables `all_dx` variables, but these are tricky to use in their standard form. If you *are* interested in this information, you can use the `pivot_curated_npr` function to convert the result of a `curate_npr` call back into a dataset that has one row per contact per diagnosis (/diagnosis grouping):
 
 
 ```{r curate7, echo = T}
@@ -243,7 +243,7 @@ mydata <- suppressMessages(curate_dataset(variables_required=list(moba = c("scl_
                          recursive=TRUE,
                          group_all=TRUE,  
                          dx_groupname=NULL,
-                         dx_owner="child", 
+                         dx_recipient="child", 
                          npr_full=npr_full)) 
 
 #You can just feed in the whole dataset from the curate_dataset command above, and non-all_dx variables will be ignored

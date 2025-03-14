@@ -16,7 +16,7 @@ library(phenotools)
 
 
 
-![](inst/rstudio/templates/phenotools.png)
+![Phenotools.](inst/rstudio/templates/phenotools.png)
 
 
 

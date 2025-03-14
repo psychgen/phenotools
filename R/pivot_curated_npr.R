@@ -49,9 +49,9 @@ if you think you have sufficient RAM available, re-run with 'large_file=TRUE'.")
 
   message("\nPivoting to long format...")
   curated_npr_tmp <- curated_npr %>%
-    dplyr::select(preg_id, BARN_NR, m_id, f_id, birth_yr, dx_owner,
+    dplyr::select(preg_id, BARN_NR, m_id, f_id, birth_yr, dx_recipient,
                   dplyr::matches("all_dx")&dplyr::matches("_npr") ) %>%
-    tidyr::gather("var","value", -preg_id:-dx_owner) %>%
+    tidyr::gather("var","value", -preg_id:-dx_recipient) %>%
     dplyr::mutate(n_occs = stringr::str_count(value,pattern = "; ")+1) %>%
     tidyr::separate(var, into = c("info","dx_group"), sep = "_all_dx_") %>%
     dplyr::group_split(n_occs)
@@ -60,12 +60,12 @@ if you think you have sufficient RAM available, re-run with 'large_file=TRUE'.")
     if(any(is.na(x$n_occs))){
       tmp <- x %>%
         dplyr::mutate(hc_contact = NA) %>%
-        dplyr::select(preg_id:dx_owner, dx_group, hc_contact, info, value)
+        dplyr::select(preg_id:dx_recipient, dx_group, hc_contact, info, value)
     }else{
       tmp <- x %>%
         tidyr::separate(value, into= paste0("hc_contact_",seq(1:unique(x$n_occs))), sep = "; " ) %>%
         tidyr::gather("hc_contact","value",-preg_id:-dx_group, -n_occs )%>%
-        dplyr::select(preg_id:dx_owner, dx_group, hc_contact, info, value)
+        dplyr::select(preg_id:dx_recipient, dx_group, hc_contact, info, value)
     }
     return(tmp)
   })

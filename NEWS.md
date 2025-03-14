@@ -1,5 +1,36 @@
 # *Changelog for phenotools package*
 
+# phenotools 0.4.2 (XXXXXX)
+
+* (pending) Adds functionality to allow user-specified MoBa questionnaire files to be use in dataset curation (i.e., files other than the main MoBa questionnaires)
+* (pending) Resolves an issue where preg_ids were duplicated in datasets curated with return_items=T for some variables (Github issue #3)
+* (pending) Resolves an issue where, when datasets are curated with KUHR and NPR data simultaneously, the diagnosis lists get mixed up (Github issue #9)
+* (pending) Adds functionality for extracting information from SSB data
+*  (pending) Changes dependence on MBRN file to avoid missing BARN_NR for those without linkage and enhance cross-project robustness, since MoBa no longer provides MBRN file 
+  -- NB, users will still have to provide a file with PREG_IDs and birth year for all
+  -- individuals, as curate_npr and curate_kuhr need the child's birth year to calculate the age_at variables
+
+
+
+# phenotools 0.4.1 (13.03.25)
+
+* Fixes a bug causing the project_specific option in available_variables() to misbehave
+* Fixes the small but potentially consequential mislabelling of the "dx_owner" option in curate_npr
+and curate_kuhr and associated documentation (as "dx_owners", which would have been ignored) - 
+NB, this fix requires the "dx_owner" option being renamed to "dx_recipient" in this version to 
+avoid confusion with an internal column name
+* Fixes a bug in which the wrong item was being reversed in the CCC2 5yr scale due to use of outdated MoBa documentation
+* Fixes a bug in which those without linkage to MBRN having a missing BARN_NR (now set BARN_NR=1 as there are no 
+multiple births in this group; Github issue #11))
+* Resolves an issue where dplyr::na_if() generates an error when using newer versions of dplyr (Github issue #12)
+
+
+
+# phenotools 0.4.0.9999 (11.06.24)
+
+* moba_varnames (internal data) updated to allow all newly available moba variables to be retrieved
+
+
 # phenotools 0.4.0 (04.06.24)
 
 * available_variables() now returns a complete list, including raw MoBa items that can be retrieved (but are not processed)

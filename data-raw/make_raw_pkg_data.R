@@ -192,14 +192,14 @@ p471_npr = read_delim("//ess01/P471/data/durable/data/NPR/NPR_requested_p471_202
 
 p471 = p471_npr %>%
   bind_rows(phenotools::npr %>%
-              select("var_name"=level3) %>%
+              select("var_name"=level2) %>%
               filter(str_detect(var_name,
                                 p471_npr %>%
                                   filter(level==3) %>%
                                   .$var_name %>%
                                   paste0(collapse="|")))) %>%
   bind_rows(phenotools::npr %>%
-              select("var_name"=level4) %>%
+              select("var_name"=level3) %>%
               filter(str_detect(var_name,
                                 p471_npr %>%
                                   filter(level==4) %>%
@@ -207,10 +207,13 @@ p471 = p471_npr %>%
                                   paste0(collapse="|")))) %>%
   arrange(var_name) %>%
   select(var_name) %>%
+  mutate(source="npr") %>%
   bind_rows(phenotools::available_variables(source="moba") %>%
-              select(var_name)) %>%
+              select(var_name) %>%
+              mutate(source="moba")) %>%
   bind_rows(phenotools::kuhr %>%
-              select("var_name"=Code))
+              select("var_name"=Code) %>%
+              mutate(source="kuhr")) %>% distinct()
 
 
 #########NB, for MoBa and KUHR, this assumes that p471 has all variables phenotools can make
