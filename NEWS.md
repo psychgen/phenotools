@@ -1,6 +1,6 @@
 # *Changelog for phenotools package*
 
-# phenotools 0.4.2 (XXXXXX)
+# phenotools 0.4.3 (XXXXXX)
 
 * (pending) Adds functionality to allow user-specified MoBa questionnaire files to be use in dataset curation (i.e., files other than the main MoBa questionnaires)
 * (pending) Resolves an issue where preg_ids were duplicated in datasets curated with return_items=T for some variables (Github issue #3)
@@ -9,7 +9,11 @@
 *  (pending) Changes dependence on MBRN file to avoid missing BARN_NR for those without linkage and enhance cross-project robustness, since MoBa no longer provides MBRN file 
   -- NB, users will still have to provide a file with PREG_IDs and birth year for all
   -- individuals, as curate_npr and curate_kuhr need the child's birth year to calculate the age_at variables
+  
+# phenotools 0.4.2 (14.05.25)
 
+* Added maternal reports on child depression (SMFQ) and anxiety (SCARED) from the 14 year questionnaire
+* Added query_scale_items function to allow users to extract relevant info about how scales are made from the internal metadata easily
 
 
 # phenotools 0.4.1 (13.03.25)
