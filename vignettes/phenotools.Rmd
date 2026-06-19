@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
 )
 library(phenotools)
 library(magrittr)
+library(dplyr)
 
 mask_ids <- function(x){
   
@@ -60,12 +61,22 @@ tail(phenovars)
 #View(phenovars)
 ```
 
+You can also check which are the "core" MoBa questionnaires from which phenotools can make scales or fetch items:
 
-To get a dataset with a variable that you want, you need to quote its var_name as the input for the `variables_required` option in the `curate_dataset` function:
+```{r available_vs2, echo = T}
+available_variables(source = c("moba")) %>% 
+  select(questionnaire) %>%
+  distinct() %>%
+  .$questionnaire
+```
+
+### Curating datasets from "core" questionnaires
+
+Scales and items from these questionnaires can be curated quite simply. To get a dataset with a variable that you want, you need to quote its var_name as the input for the `variables_required` option in the `curate_dataset` function:
 
 ```{r curate1, echo = T}
 mydata <- curate_dataset(variables_required="scl_anx_m_3yr",
-                         pheno_data_root_dir="N:/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+                         moba_data_root_dir="//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
                          PDB="2306",
                          moba_data_version=12,
                          completion_threshold=0.5,
@@ -78,17 +89,47 @@ mydata <- curate_dataset(variables_required="scl_anx_m_3yr",
 head(mydata) 
 ```
 
+NB - if you have SV_INFO and MBRN files with standard names in your `moba_data_root_dir`, you can ignore the `override_filenames` argument. If not, see `?curate_dataset()` for how to solve this.
+
+> **How is phenotools making scales?**
+>
+> One of the benefits of the package is that you can get scale variable coded up by default. But what decisions are made in this process?
+>
+> 1. Zero-start coding: all response on scale items are given integer values, and the lowest response level is always 0
+>
+> 2. Scales are calcuated based on taking the mean of responses on all avaiable items in the scale, multiplying this by the number of items in the scale, and rounding so that all scale scores represent totals that would be possible for people completing the scale in its entirety.
+>
+> 3. Scale scores are set to missing for those completing a lower proportion of scale items than the value set using the `completion_threshold` option in the `curate_dataset()` function - the default here is 0.5, meaning that anyone completing more than half of the items will get a scale score
+>
+> **Still unsure?**
+>
+> Run your curate_dataset call with `return_items=T`. Then you get all items in their raw and integer forms, and you can re-create scales yourself to test alternative specifications
+>
+> **What are the response levels for items in my scale, and how does phenotools assign them integer values? Are any items reversed?**
+>
+> Run the function `query_scale items()` for your scale to see exactly what is going on
+
+
+Let's check the details of how the scale from the example above is being made with the `query_scale_items()` function:
+```{r query_Scale_items, echo = T}
+
+
+query_scale_items("scl_anx_m_3yr")
+
+ 
+```
+
 
 Other important inputs here are the root directory of the MoBa phenotypic data (SPSS format) and PDB code for the project you are working in. Both default to the correct values for the p471 TSD project. 
 
 Note that you can override the expected filenames for all of the MoBa questionnaire files using the override_filenames option, plus the MBRN and SV_INFO files mentioned in the default input for that option. These two files are mentioned in the input above as a reminder than they will be implicitly accessed by the function no matter what variables you request (and as such, if the MoBa files in your project are named differently than  "PDB>PDB<_>code<_v>moba_data_version<.sav", you will need to provide correct filenames for them - as well as any questionnaires from which variables are to be sourced - in order for the function to run). 
 
-Likely, you will want a dataset with multiple phenotypes; `variables_required` needs the var_names for your variables as a concatenated string:
+Likely, you will want a dataset with multiple phenotypes; `variables_required` needs the var_names for your variables as a concatenated string. These can be either scale names (from `available_variables`) or simply item codes from MoBa documentation:
 
 ```{r curate2, echo = T, eval= F}
 
 ##Not run
-mydata <- curate_dataset(variables_required=c("scl_anx_m_3yr","bmi_derived_f_q1"))
+mydata <- curate_dataset(variables_required=c("scl_anx_m_3yr","bmi_derived_f_q1","AA137"))
 ```
 
 
@@ -124,6 +165,28 @@ names(myscaledata)
 names(myitemdata)
 ```
 
+### Curating datasets from non-"core" questionnaires
+
+In order to allow flexibility in curating analytic datasets, you can also direct phenotools to any MoBa questionnaire file and pull in variables from that file. A common reason to do this might be that you are using variables from outside the "core" questionnaires for which file and variable names are built into phenotools.
+
+To add variables from other files (these must have MoBa id variables in; see `?curate_dataset` and details of the `assert_moba_files` option for details), you can do the following:
+
+```{r curate3.1, echo = T}
+
+mydata <- curate_dataset(variables_required=c("scl_anx_m_3yr","bmi_derived_f_q1","YA12","mothers_age"),
+                         return_items = T, 
+                         out_format="list",
+                         assert_moba_files = c("PDB2306_MoBaUng_skjema1_v12.sav",
+                                               "//ess01/P471/data/durable/data/MoBaPhenoData/MoBa_standard_covariates/data/covariates_moba_2.sav")) 
+
+
+myitemdata <- mydata$moba$items
+
+names(myitemdata)
+```
+
+Note that `assert_moba_files` can take either a filename only (if the file is in the `moba_data_root_dir` directory), or a full filepath for files stored elsewhere. The order of variables/files does not matter, and you can add as many different variables and additional MoBa files as you need.
+
 See the help pages (`?curate_dataset`) for more options.
 
 &nbsp;
@@ -153,7 +216,7 @@ mydata <- curate_dataset(variables_required=list(moba = c("scl_anx_m_3yr","bmi_d
                          return_items = T, 
                          out_format="list",
                          npr_data_root_dir = "//ess01/P471/data/durable/data/NPR/processed/",
-                         npr_filename = "18_34161_NPR.sav") 
+                         npr_filename = "npr2026.csv") 
 
 ```
 
@@ -205,7 +268,7 @@ Finally, it is worth noting that we can create variables pertaining to multiple 
 
 npr_full <- preload_npr(
   npr_data_root_dir = "//ess01/P471/data/durable/data/NPR/processed/",
-  npr_filename = "npr2024.sav")
+  npr_filename = "npr2026.csv")
 
 #We'll feed this into the curate_dataset call below, speeding that (and any subsequent dataset curations using NPR data) up considerably
 

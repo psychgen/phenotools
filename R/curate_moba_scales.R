@@ -42,7 +42,7 @@ for your requested scales..." ))
   if(return_items==T){
     moba_item_data <- moba_data%>%
       dplyr::select(preg_id:birth_yr)
-      }
+  }
 
   #Create a vector of all reversed items among requested vars
   moba_rvrsd_items <- unlist(strsplit(paste0(dplyr::filter(moba_scale_vars,!is.na(reversed))$reversed, collapse=","),","))
@@ -73,7 +73,8 @@ for your requested scales..." ))
             dplyr::left_join(moba_scale_vars_long %>%
                                dplyr::select(item_name,var_name)%>%
                                dplyr::filter(var_name == v)))) %>%
-      dplyr::mutate(numval = ifelse(item_name %in% moba_rvrsd_items, neg_numval,pos_numval))
+      dplyr::mutate(numval = ifelse(item_name %in% moba_rvrsd_items, neg_numval,pos_numval))%>%
+      dplyr::distinct()
 
 
     moba_scale_data_temp <- moba_item_data_temp %>%
@@ -91,6 +92,7 @@ for your requested scales..." ))
 
     ##Create raw/processed item dataset if return_items ==true
     if(return_items==T){
+
       moba_item_raw_temp <-
         suppressMessages(
           suppressWarnings(
@@ -134,9 +136,9 @@ for your requested scales..." ))
 
   }
 
-message("\nProcessing of MoBa scale variables complete.")
+  message("\nProcessing of MoBa scale variables complete.")
 
-if(return_items==T){
+  if(return_items==T){
     return(list(scales = moba_scale_data, items = moba_item_data))
   }else{
     return(moba_scale_data)}

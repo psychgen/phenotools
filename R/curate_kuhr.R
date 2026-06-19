@@ -46,6 +46,7 @@
 #' @param moba_data_version What version is the MoBa data you are linking to? Defaults to
 #' 12
 #' @param moba_filepaths Allows curate_dataset to pass on an amended list of filepaths
+#' @param curate_dataset_call Flag to ensure function is called from within curate_dataset
 #' @export
 #' @importFrom dplyr "%>%"
 #' @importFrom lubridate "%--%"
@@ -69,8 +70,14 @@ curate_kuhr <- function(diagnoses,
                         PDB="2306",
                         moba_data_version = 12,
                         moba_filepaths=NULL,
+                        curate_dataset_call=NULL,
                         ...)
 {
+  ## Check if a user is calling directly (Which is wrong) or coming from a curate_dataset call (which is correct)
+
+  if (is.null(curate_dataset_call) ){
+    stop(paste0("\nThis function is not designed to be called directly by the user. Instead, you should use curate_dataset(), supplying variable names/diagnostic codes as per the documentation for that function, as well as any arguments you want passing on to this function."))
+  }
 
 
   #Full data loaded - skip load

@@ -12,7 +12,7 @@
 #' @param npr_data_root_dir Where is the raw NPR phenotypic data? (default
 #' is for p471)
 #' @param npr_filename What is the name of the NPR file? (default
-#' is for p471)
+#' is for p471; can be .csv or .sav)
 
 #' @export
 #' @importFrom dplyr "%>%"
@@ -20,13 +20,19 @@
 
 
 preload_npr <- function(npr_data_root_dir="//ess01/P471/data/durable/data/NPR/processed/",
-                        npr_filename="npr2024.sav")
+                        npr_filename="npr2026.csv")
 {
 
   message(
-    "\n\nReading in NPR data file (this is a large file so expect a wait of >2 mins)...")
+    "\n\nReading in NPR data file (this is a large file so expect a wait)...")
+  if(stringr::str_detect(npr_filename, ".sav")){
+    npr_full <- haven::read_spss(paste0(npr_data_root_dir,npr_filename))
+  }
+  if(stringr::str_detect(npr_filename, ".csv")){
+    npr_full <- suppressWarnings(readr::read_csv(paste0(npr_data_root_dir,npr_filename), col_types=readr::cols()))
+  }
 
-  npr_full <- haven::read_spss(paste0(npr_data_root_dir,npr_filename)) %>%
+  npr_full <- npr_full %>%
     dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst|NCMP|NCSP")), list(~stringr::str_remove_all(.,"[[:punct:]]"),
                                                                               ~stringr::str_trim(.,"both"),
                                                                               ~stringr::str_replace_all(., stringr::fixed(" "), ""))) %>% #Remove non alphanumeric values in all tilst- variables

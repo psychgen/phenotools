@@ -14,15 +14,16 @@ curate_npr(
   dx_range_limits = NULL,
   npr_full = NULL,
   npr_preprocessed = NULL,
- 
-    moba_data_root_dir = "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+  moba_data_root_dir =
+    "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
   npr_data_root_dir = "//ess01/P471/data/durable/data/NPR/processed/",
-  npr_filename = "npr2024.sav",
+  npr_filename = "npr2026.csv",
   npr_linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/NPR_link/",
-  npr_linkage_filename = "PDB2306_kobling_npr2024_mor_far_barn.sav",
+  npr_linkage_filename = "PDB2306_kobling_npr2026_mor_far_barn.sav",
   PDB = "2306",
   moba_data_version = 12,
   moba_filepaths = NULL,
+  curate_dataset_call = NULL,
   ...
 )
 }
@@ -67,7 +68,7 @@ is for p471)}
 is for p471)}
 
 \item{npr_filename}{What is the name of the NPR file? (default
-is for p471)}
+is for p471; file can be .sav or .csv)}
 
 \item{npr_linkage_file_root_dir}{Where is the linkage file? (default
 is for p471)}
@@ -84,6 +85,8 @@ is for p471)}
 12}
 
 \item{moba_filepaths}{Allows curate_dataset to pass on an amended list of filepaths}
+
+\item{curate_dataset_call}{Flag to ensure function is called from within curate_dataset}
 }
 \description{
 \code{curate_npr} is called by \code{curate_dataset}

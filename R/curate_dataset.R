@@ -41,6 +41,16 @@
 #'  you will need to provide filenames for these (as well as the questionnaire files
 #'  from which your variables are to be sourced) if they differ from the expected format
 #'  is a reminder that these sources
+#'  @param assert_moba_files a vector of strings naming moba files other than those
+#'  in the core collections currently encoded into phenotools
+#'   (see unique(available_variables("moba")$questionnaire) to allow curation of
+#'  more complete analytic datasets including variables from MoBa sources not
+#'  currently included in the package. If the files are located in the same directory
+#'  as moba_data_root_dir, you can provide filenames only; otherwise, the full
+#'  filepath and filename should be provided as a single string. Files must be in .sav
+#'  format and contain MoBa ID variables (some combination of PREG_ID_PDB#, BARN_NR, M_ID_PDB#, F_ID_PDB#).
+#'  You should provide variable names to be extracted in the variables_required option (in
+#'  the list element labelled "moba" if curating from multiple sources).
 #' @param flag_genetics Defaults to TRUE, which includes an indicator variable
 #'  for who, in a given pregnancy trio, has genetic data available (C = child,
 #'  M = mother, F = father). Relies on the availability of a file with genetic and
@@ -92,6 +102,7 @@ curate_dataset <- function(variables_required,
                            log=NULL,
                            out_format = "list",
                            override_filenames = NULL,
+                           assert_moba_files = NULL,
                            flag_genetics = TRUE,
                            genetic_id_file="//ess01/P471/data/durable/data/genetic/MoBaPsychGen_v1/MoBaPsychGen_v1-ec-eur-batch-basic-qc-cov.txt",
                            ...){
@@ -133,11 +144,62 @@ Either install it or re-run with log=NULL.")
     stop(paste0("No variable(s) specified in 'variables_required'.\n\nFor a list of valid variable names run avaliable_variables()"))
   }
 
+  ##If non-core MoBa files are asserted, read them into memory and take the variable names
+  if(!is.null(assert_moba_files)){
+    xtra_moba_varnames = list()
+    #Check whether these are filenames or filepath + filenames, separate and read in accordingly
+    #Filenames only
+
+
+    for(file in assert_moba_files[!stringr::str_detect(assert_moba_files, "/")]){
+      ##check exists
+      if(!file.exists(paste0(moba_data_root_dir,file))){
+        stop(paste0("File ",moba_data_root_dir, file," not found. Please check inputs and try again. If this file is not located in the moba_data_root_dir, you need to specify the full filepath in your input to assert_moba_variables."))
+      }
+      ##read file, get names
+      temp <-
+        haven::read_spss(paste0(moba_data_root_dir,file) ) %>%
+        names()
+      ##Error no moba ids
+      ids_allowed = paste0("PREG_ID_",PDB,"|M_ID_", PDB,"|F_ID_",PDB,"|preg_id","|m_id","|f_id")#Allow for id variables pre-converted to phenotools style
+      if (!any(stringr::str_detect(temp, ids_allowed)) ){
+        stop(paste0("No valid MoBa ID variable(s) detected in file ", file,"; some combination of PREG_ID_PDB#, BARN_NR, M_ID_PDB#, F_ID_PDB# must be present in files declared under assert_moba_files option."))
+      }
+
+      xtra_moba_varnames[[stringr::str_remove_all(file, ".sav")]] = temp
+    }
+    #Filepath+filenames
+    for(file in assert_moba_files[stringr::str_detect(assert_moba_files, "/")]){
+      ##check exists
+      if(!file.exists(file)){
+        stop(paste0("\nFile ", file," not found. Please check inputs and try again."))
+      }
+      ##read file, get names
+      temp <-
+        haven::read_spss(file ) %>%
+        names()
+      ##Error no moba ids
+      ids_allowed = paste0("PREG_ID_",PDB,"|M_ID_", PDB,"|F_ID_",PDB,"|preg_id","|m_id","|f_id")#Allow for id variables pre-converted to phenotools style
+      if (!any(stringr::str_detect(temp, ids_allowed)) ){
+        stop(paste0("No valid MoBa ID variable(s) detected in file ", file,"; some combination of PREG_ID_PDB#, BARN_NR, M_ID_PDB#, F_ID_PDB# must be present in files declared under assert_moba_files option."))
+      }
+      # isolate filename
+      fileppieces= stringr::str_split(file, pattern="/")
+      filename=fileppieces[[1]][[length(fileppieces[[1]])]]
+
+      xtra_moba_varnames[[stringr::str_remove_all(filename, ".sav")]] = temp
+    }
+
+    moba_varnames_tmp = c(phenotools::moba_varnames, xtra_moba_varnames)
+  } else {
+    moba_varnames_tmp= phenotools::moba_varnames
+  }
+
 
   ## Function to find MoBa items
 
   moba_item_finder <- function(var){
-    res<- lapply(phenotools::moba_varnames, function(ch) grep(paste0("\\b",var,"\\b"), ch))
+    res<- lapply(moba_varnames_tmp, function(ch) grep(paste0("\\b",var,"\\b"), ch))
     res2 <- sapply(res, function(x) length(x) > 0)
     if(!any(res2)==TRUE){
       return(NA)
@@ -152,6 +214,11 @@ Either install it or re-run with log=NULL.")
 
 
   if(!is.list(variables_required)){
+
+    ##Error duplicate moba items supplied
+    if (any(duplicated(variables_required)) ){
+      stop(paste0("Duplicate MoBa variable(s) supplied in 'variables_required' argument:\n",variables_required[duplicated(variables_required)] ,"\nPlease remove duplicates and re-run."))
+    }
 
     ##Pull out any "new" variables
     if (length(variables_required[(!variables_required %in% suppressMessages(available_variables("moba", include_unprocessed =F )$var_name))])>=1 ){
@@ -214,7 +281,12 @@ Run unique(available_variables()$source) to see how to specify source names.
 
 Unrecognised source names: ", names(variables_required)[!names(variables_required) %in% suppressMessages(unique(available_variables( include_unprocessed =F)$source))]) )
     }
-
+    ##Error ifduplicate moba items supplied
+    if(any(names(variables_required)=="moba")){
+      if (any(duplicated(variables_required[["moba"]])) ){
+        stop(paste0("Duplicate MoBa variable(s) supplied in 'variables_required' argument:\n",variables_required[["moba"]][duplicated(variables_required[["moba"]])] ,"\nPlease remove duplicates and re-run."))
+      }
+    }
     #unlist the inputs
     variables_required <- unlist(variables_required) %>%
       as.data.frame() %>%
@@ -342,6 +414,35 @@ in override_filenames or else forgotten the '.sav' file extension.")
 
   }
 
+  ## Add filepaths for any asserted MoBa variables
+
+  ##If non-core MoBa files are asserted, read them into memory and take the variable names
+  if(!is.null(assert_moba_files)){
+    #Check whether these are filenames or filepath + filenames, separate and add accordingly
+    #Filenames only
+    for(file in assert_moba_files[!stringr::str_detect(assert_moba_files, "/")]){
+
+      moba_filepaths <- moba_filepaths %>%
+        tibble::add_row("questionnaire"=stringr::str_remove_all(file,".sav"),
+                        "filepath"= paste0(moba_data_root_dir,file))
+    }
+    #Filepath+filenames
+    for(file in assert_moba_files[stringr::str_detect(assert_moba_files, "/")]){
+      # isolate filename
+      fileppieces= stringr::str_split(file, pattern="/")
+      filename=fileppieces[[1]][[length(fileppieces[[1]])]]
+
+      moba_filepaths <- moba_filepaths %>%
+        tibble::add_row("questionnaire"=stringr::str_remove_all(filename,".sav"),
+                        "filepath"= paste0(file))
+    }
+
+    moba_varnames_tmp = c(phenotools::moba_varnames, xtra_moba_varnames)
+  } else {
+    moba_varnames_tmp= phenotools::moba_varnames
+  }
+
+
 
   if(any(sources$source == "moba")){
 
@@ -427,6 +528,28 @@ source of the items.") )}
                                          unlist(strsplit(paste0(dplyr::filter(moba_vars,questionnaire == q)$items, collapse=","),","))) %>%
                            dplyr::mutate(preg_id=as.character(preg_id)))
 
+
+      }
+      if(!q %in% c("Q1","Q3","QF","Far2","Q4_6months","Q5_18months","Q5yrs","Q6_3yrs","Q7yrs","Q8yrs","MBRN","Q14yB","Q14yM")){
+        suppressMessages(qvars_temp <- haven::read_spss(moba_filepaths %>% dplyr::filter(questionnaire==q) %>% .$filepath ) %>%
+                           dplyr::select(preg_id = dplyr::matches("PREG_ID"),
+                                         m_id = dplyr::matches("M_ID"),
+                                         f_id = dplyr::matches("F_ID"),
+                                         BARN_NR = dplyr::matches("BARN_NR"),
+                                         unlist(strsplit(paste0(dplyr::filter(moba_vars,questionnaire == q)$items, collapse=","),","))))
+
+        if("preg_id" %in% names(qvars_temp)){
+          suppressMessages(qvars_temp <- qvars_temp %>%
+                             dplyr::mutate(preg_id=as.character(preg_id)))
+        }
+        if("m_id" %in% names(qvars_temp)){
+          suppressMessages(qvars_temp <- qvars_temp %>%
+                             dplyr::mutate(m_id=as.character(m_id)))
+        }
+        if("f_id" %in% names(qvars_temp)){
+          suppressMessages(qvars_temp <- qvars_temp %>%
+                             dplyr::mutate(f_id=as.character(f_id)))
+        }
 
       }
 
@@ -536,6 +659,9 @@ dataset, and the second (\"items\")is your item-level dataset, with \"_raw\" and
 
       }else{
 
+        moba_data_combined[["items"]] <- moba_data_combined[["items"]] %>%
+          dplyr::select(-birth_yr)
+
         moba_data_combined <- moba_data_combined %>%
           purrr::reduce(dplyr::full_join, by=c("preg_id","BARN_NR","m_id","f_id"))
 
@@ -562,7 +688,6 @@ to your main dataset.")
 
     all_data_combined[["moba"]]<- moba_data_combined
   }
-
 
 
   #NPR
@@ -592,6 +717,7 @@ curate_npr().")
 
     npr_data_combined <- curate_npr(diagnoses = npr_vars$var_name,
                                     moba_filepaths = moba_filepaths,
+                                    curate_dataset_call = TRUE,
                                     ...)
 
 
@@ -627,6 +753,7 @@ curate_kuhr().")
 
     kuhr_data_combined <- curate_kuhr(diagnoses = kuhr_vars$var_name,
                                       moba_filepaths = moba_filepaths,
+                                      curate_dataset_call = TRUE,
                                       ...)
 
 
@@ -709,11 +836,41 @@ curate_kuhr().")
 
   message("\nCurating the final dataset(s)...")
 
+  ## Covariate names for tidy up
+  covnames <- paste0(c( "year_birth", "sex_birth",
+                        "parity", "mothers_age", "mother_age_first_child",
+                        "number_children_mother", "fathers_age", "father_age_first_child",
+                        "number_children_father", "nus_simplified_code_m", "edu_group_m",
+                        "isced_simplified_code_m", "isced_simplified_code_desc_m", "years_edu_m",
+                        "nus_simplified_code_f", "edu_group_f", "isced_simplified_code_f",
+                        "isced_simplified_code_desc_f", "years_edu_f", "income_deciles_win"),"_raw")
+  #Tidy up cov names if data.frame
   if(out_format == "merged_df"){
 
+    #Merge list elements
     all_data_combined <- all_data_combined %>%
       purrr::reduce(dplyr::full_join)
+
+    ## Tidy up names and relocate covariate vars if present
+    all_data_combined <- all_data_combined %>%
+      dplyr::rename_with( ~ stringr::str_replace(.x,"_raw","_cov"), tidyselect::matches(paste0(covnames, collapse="|"))) |>
+      dplyr::select(preg_id:birth_yr, tidyselect::matches("_cov"), dplyr::everything() )
+
+  }else{
+    #Tidy up cov names if list
+    if(return_items==F){
+      ## Tidy up names and relocate covariate vars if present
+      all_data_combined$moba <- all_data_combined$moba %>%
+        dplyr::rename_with( ~ stringr::str_replace(.x,"_raw","_cov"), tidyselect::matches(paste0(covnames, collapse="|"))) |>
+        dplyr::select(preg_id:birth_yr, tidyselect::matches("_cov"), dplyr::everything() )
+    }else{
+      ## Tidy up names and relocate covariate vars if present
+      all_data_combined$moba$items <- all_data_combined$moba$items %>%
+        dplyr::rename_with( ~ stringr::str_replace(.x,"_raw","_cov"), tidyselect::matches(paste0(covnames, collapse="|"))) |>
+        dplyr::select(preg_id:birth_yr, tidyselect::matches("_cov"), dplyr::everything() )
+    }
   }
+
   message("\nDataset curation complete.")
   return(all_data_combined)
 

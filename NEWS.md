@@ -1,14 +1,45 @@
 # *Changelog for phenotools package*
 
-# phenotools 0.4.3 (XXXXXX)
+# phenotools 0.5.1 (XXXXXX)
 
-* (pending) Adds functionality to allow user-specified MoBa questionnaire files to be use in dataset curation (i.e., files other than the main MoBa questionnaires)
-* (pending) Resolves an issue where preg_ids were duplicated in datasets curated with return_items=T for some variables (Github issue #3)
-* (pending) Resolves an issue where, when datasets are curated with KUHR and NPR data simultaneously, the diagnosis lists get mixed up (Github issue #9)
+
+* (pending) Resolves an issue where, when datasets are curated with KUHR and NPR data simultaneously, the diagnosis lists can get mixed up (Github issue #9)
 * (pending) Adds functionality for extracting information from SSB data
 *  (pending) Changes dependence on MBRN file to avoid missing BARN_NR for those without linkage and enhance cross-project robustness, since MoBa no longer provides MBRN file 
   -- NB, users will still have to provide a file with PREG_IDs and birth year for all
   -- individuals, as curate_npr and curate_kuhr need the child's birth year to calculate the age_at variables
+* (pending) Completed development of curate_kpr function to use diagnostic data from KPR  
+
+# phenotools 0.5.0 (10.06.26)
+
+* Adds functionality to include any file with MoBa ids (i.e., files other than the main MoBa questionnaires) in a curate_dataset call (option assert_moba_files in curate_dataset())
+* Adds read_csv as default option for npr file to improve speed
+* Adds compatibility with pre-prepared default covariates file in p471
+* Resolves an issue where preg_ids were duplicated in datasets curated with return_items=T for some variables (Github issue #3)
+* Adds in informative error for when duplicate inputs are provided in moba variables_required vector (Github issue #18)
+* Adds in informative error for when curate_npr/Kuhr are called directly (Github issue #15)
+* Addresses item ordering issue in CBCL externalising at 5 years (Github issue #17)
+* Fixed error in curate_dataset option name in vignette example (Github issue #13)
+* Updated vignette to include more info about scale creation and demo of query_scale_items() (Github issue #16)
+* Updates defaults for NPR data filename and linkage filename
+* Adds the following missing scales from core questionnaires:
+      --cape_freq_c_14c
+      --rsdbd_adhd_c_14m
+      --cape_distress_c_14c
+      --cape_freq_f_far2
+      --cape_distress_c_far2
+      --sdq_prosocial_c_14c
+      --sdq_prosocial_c_14m
+      --audit_freq_m_14m
+      --audit_unit_m_14m
+      --audit_prob_m_14m
+      --audit_freq_f_far2
+      --audit_unit_f_far2
+      --audit_prob_f_far2
+      --cdi_fine_c_5yr
+      --cdi_gross_c_5yr
+      --scl_dep_m_q1
+
   
 # phenotools 0.4.2 (14.05.25)
 

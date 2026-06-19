@@ -6,8 +6,8 @@
 \usage{
 curate_dataset(
   variables_required,
- 
-    moba_data_root_dir = "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+  moba_data_root_dir =
+    "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
   PDB = "2306",
   moba_data_version = 12,
   completion_threshold = 0.5,
@@ -17,9 +17,10 @@ curate_dataset(
   log = NULL,
   out_format = "list",
   override_filenames = NULL,
+  assert_moba_files = NULL,
   flag_genetics = TRUE,
- 
-    genetic_id_file = "//ess01/P471/data/durable/data/genetic/MoBaPsychGen_v1/MoBaPsychGen_v1-ec-eur-batch-basic-qc-cov.txt",
+  genetic_id_file =
+    "//ess01/P471/data/durable/data/genetic/MoBaPsychGen_v1/MoBaPsychGen_v1-ec-eur-batch-basic-qc-cov.txt",
   ...
 )
 }
@@ -57,7 +58,17 @@ override this because the filenames have been altered in your TSD project, add
  The SV_INFO and MBRN files are accessed implicitly for every curate call, so
  you will need to provide filenames for these (as well as the questionnaire files
  from which your variables are to be sourced) if they differ from the expected format
- is a reminder that these sources}
+ is a reminder that these sources
+ @param assert_moba_files a vector of strings naming moba files other than those
+ in the core collections currently encoded into phenotools
+  (see unique(available_variables("moba")$questionnaire) to allow curation of
+ more complete analytic datasets including variables from MoBa sources not
+ currently included in the package. If the files are located in the same directory
+ as moba_data_root_dir, you can provide filenames only; otherwise, the full
+ filepath and filename should be provided as a single string. Files must be in .sav
+ format and contain MoBa ID variables (some combination of PREG_ID_PDB#, BARN_NR, M_ID_PDB#, F_ID_PDB#).
+ You should provide variable names to be extracted in the variables_required option (in
+ the list element labelled "moba" if curating from multiple sources).}
 
 \item{flag_genetics}{Defaults to TRUE, which includes an indicator variable
 for who, in a given pregnancy trio, has genetic data available (C = child,

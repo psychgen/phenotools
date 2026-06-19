@@ -63,7 +63,7 @@
 #' @param npr_data_root_dir Where is the raw NPR phenotypic data? (default
 #' is for p471)
 #' @param npr_filename What is the name of the NPR file? (default
-#' is for p471)
+#' is for p471; file can be .sav or .csv)
 #' @param npr_linkage_file_root_dir Where is the linkage file? (default
 #' is for p471)
 #' @param npr_linkage_filename What is the name of the linkage file? (default
@@ -75,6 +75,7 @@
 #' @param moba_data_version What version is the MoBa data you are linking to? Defaults to
 #' 12
 #' @param moba_filepaths Allows curate_dataset to pass on an amended list of filepaths
+#' @param curate_dataset_call Flag to ensure function is called from within curate_dataset
 #' @export
 #' @importFrom dplyr "%>%"
 #' @importFrom lubridate "%--%"
@@ -91,14 +92,21 @@ curate_npr <- function(diagnoses,
                        npr_preprocessed = NULL,
                        moba_data_root_dir= "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
                        npr_data_root_dir= "//ess01/P471/data/durable/data/NPR/processed/",
-                       npr_filename="npr2024.sav",
+                       npr_filename="npr2026.csv",
                        npr_linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/NPR_link/",
-                       npr_linkage_filename = "PDB2306_kobling_npr2024_mor_far_barn.sav",
+                       npr_linkage_filename = "PDB2306_kobling_npr2026_mor_far_barn.sav",
                        PDB="2306",
                        moba_data_version = 12,
                        moba_filepaths= NULL,
+                       curate_dataset_call=NULL,
                        ...)
 {
+
+  ## Check if a user is calling directly (Which is wrong) or coming from a curate_dataset call (which is correct)
+
+  if (is.null(curate_dataset_call)){
+    stop(paste0("\nThis function is not designed to be called directly by the user. Instead, you should use curate_dataset(), supplying variable names/diagnostic codes as per the documentation for that function, as well as any arguments you want passing on to this function."))
+  }
 
 
   ## Initial warning about checking available NPR codes...
@@ -113,6 +121,9 @@ curate_npr <- function(diagnoses,
 
     message(
       "\n\nWorking with pre-processed NPR file...")
+    warning(
+      "\nNB pre-processed NPR files should already be linked to MoBa IDs, so any npr_linkage_file_root_dir and npr_linkage_filename options will be ignored. If you need to customise these options to obtain proper linkage, do so in the preload_npr function or re-run this function without the preprocessed NPR file.\n")
+
 
     if(any(!c("preg_id", "BARN_NR", "m_id","f_id","FAAR", "dx_owner","LNr")
            %in% names(npr_preprocessed))){
@@ -150,11 +161,18 @@ curate_npr <- function(diagnoses,
     }else {
       #Read in the NPR data and filter
       message(
-        "\n\nReading in NPR data file (this is a large file so expect a wait of >2 mins)...")
+        "\n\nReading in NPR data file (this is a large file so expect a wait)...")
 
       mem_preserve <-1
 
-      npr_full <- haven::read_spss(paste0(npr_data_root_dir,npr_filename)) %>%
+      if(stringr::str_detect(npr_filename, ".sav")){
+      npr_full <- haven::read_spss(paste0(npr_data_root_dir,npr_filename))
+      }
+      if(stringr::str_detect(npr_filename, ".csv")){
+        npr_full <- suppressWarnings(readr::read_csv(paste0(npr_data_root_dir,npr_filename), col_types=readr::cols()))
+      }
+
+     npr_full= npr_full %>%
         dplyr::mutate_at(dplyr::vars(tidyr::starts_with("tilst|NCMP|NCSP")), list(~stringr::str_remove_all(.,"[[:punct:]]"),
                                                                                   ~stringr::str_trim(.,"both"),
                                                                                   ~stringr::str_replace_all(., stringr::fixed(" "), ""))) %>% #Remove non alphanumeric values in all tilst- variables

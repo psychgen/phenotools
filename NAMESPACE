@@ -2,6 +2,7 @@
 
 export(available_variables)
 export(curate_dataset)
+export(curate_kpr)
 export(curate_kuhr)
 export(curate_moba_scales)
 export(curate_npr)

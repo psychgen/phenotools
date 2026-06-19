@@ -6,7 +6,7 @@
 \usage{
 preload_npr(
   npr_data_root_dir = "//ess01/P471/data/durable/data/NPR/processed/",
-  npr_filename = "npr2024.sav"
+  npr_filename = "npr2026.csv"
 )
 }
 \arguments{
@@ -14,7 +14,7 @@ preload_npr(
 is for p471)}
 
 \item{npr_filename}{What is the name of the NPR file? (default
-is for p471)}
+is for p471; can be .csv or .sav)}
 }
 \description{
 \code{preload_nor} returns a dataframe with the full NPR dataset, useful if

@@ -15,16 +15,16 @@ curate_kuhr(
   dx_recipient = c("child"),
   dx_range_limits = NULL,
   kuhr_full = NULL,
- 
-    moba_data_root_dir = "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
+  moba_data_root_dir =
+    "//ess01/P471/data/durable/data/MoBaPhenoData/PDB2306_MoBa_V12/SPSS/",
   kuhr_data_root_dir = "//ess01/P471/data/durable/data/KUHR/KUHR_current/DSV files/",
   kuhr_filenames_override = NULL,
- 
-    kuhr_linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/KUHR_link/",
+  kuhr_linkage_file_root_dir = "//ess01/P471/data/durable/data/Linkage_files/KUHR_link/",
   kuhr_linkage_filename = "PDB2306_kobling_KUHR_mor_far_barn.sav",
   PDB = "2306",
   moba_data_version = 12,
   moba_filepaths = NULL,
+  curate_dataset_call = NULL,
   ...
 )
 }
@@ -82,6 +82,8 @@ is for p471)}
 12}
 
 \item{moba_filepaths}{Allows curate_dataset to pass on an amended list of filepaths}
+
+\item{curate_dataset_call}{Flag to ensure function is called from within curate_dataset}
 
 \item{dx_recipent}{Whose diagnoses do you want to count? Dataset is returned as
 one row per pregnancy, but you can get the diagnoses relevant to any
