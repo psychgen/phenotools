@@ -1,6 +1,6 @@
 # *Changelog for phenotools package*
 
-# phenotools 0.5.1 (XXXXXX)
+# phenotools 0.5.3 (XXXXXX)
 
 
 * (pending) Resolves an issue where, when datasets are curated with KUHR and NPR data simultaneously, the diagnosis lists can get mixed up (Github issue #9)
@@ -9,6 +9,16 @@
   -- NB, users will still have to provide a file with PREG_IDs and birth year for all
   -- individuals, as curate_npr and curate_kuhr need the child's birth year to calculate the age_at variables
 * (pending) Completed development of curate_kpr function to use diagnostic data from KPR  
+
+# phenotools 0.5.2 (27.08.26)
+
+* Resolves an issue where curate_kuhr was over-using RAM by inefficiently processing date information
+* Maternal SCL wave to wave consistent items updated
+
+# phenotools 0.5.1 (16.07.26)
+
+* Resolves an issue where NPR diagnoses from multiple dx_recipients could not be included in a single call (Github issue #14)
+* Fixes a bug caused by a new version of rsdbd_adhd_c_14m being introduced in 0.5.0; this should have been (and is now) rsdbd_hyp_c_14m
 
 # phenotools 0.5.0 (10.06.26)
 

@@ -536,7 +536,7 @@ Resulting variables will be labelled with ", if(!is.null(dx_groupname)){dx_group
 
     npr_processed <- suppressMessages(suppressWarnings(npr_processed %>%
                                                          tidyr::gather(key=var_type, val=val, -preg_id:-dx_recipient) %>%
-                                                         tidyr::unite(var_type_owner, c("var_type","dx_dx_recipient")) %>%
+                                                         tidyr::unite(var_type_owner, c("var_type","dx_recipient")) %>%
                                                          tidyr::spread(var_type_owner, val)))
   }
 

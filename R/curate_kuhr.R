@@ -297,8 +297,15 @@ icd10_to_icpc() for your required codes and supply these as inputs to curate_kuh
   #Process date range inputs
 
   kuhr_yrs = suppressWarnings(suppressMessages(kuhrdata %>%
-    dplyr::mutate(date = lubridate::round_date(lubridate::parse_date_time(MNED,"ym"),unit="month")) %>%
-    tidyr::separate(MNED, into =c("aar","month"), sep = "-")))
+                                                 dplyr::mutate(date = lubridate::round_date(lubridate::parse_date_time(MNED,"ym"),unit="month")) %>%
+                                                 #  tidyr::separate(MNED, into =c("aar","month"), sep = "-")))
+                                                 dplyr::mutate(aar = lubridate::year(date),
+                                                               month = lubridate::month(date)) %>%
+                                                 dplyr::select(-MNED)))
+
+
+
+
 
   if(is.null(dx_range_limits)){
     dx_yrs = seq(min(kuhr_yrs$aar),max(kuhr_yrs$aar),1)
@@ -325,7 +332,9 @@ icd10_to_icpc() for your required codes and supply these as inputs to curate_kuh
                                                                                dplyr::select(LNr, FAAR,dx_owner) %>%
                                                                                dplyr::distinct()) %>%
                                                             dplyr::mutate(date = lubridate::round_date(lubridate::parse_date_time(MNED,"ym"),unit="month")) %>%
-                                                            tidyr::separate(MNED, into =c("year","month"), sep = "-") %>%
+                                                            dplyr::mutate(year = lubridate::year(date),
+                                                                          month = lubridate::month(date)) %>%
+                                                            dplyr::select(-MNED) %>%
                                                             dplyr::mutate(childage_at_yrs = as.numeric(year)-FAAR ) %>%
                                                             dplyr::mutate(other_codes= stringr::str_remove_all(DIAGNOSER, d) ,
                                                                           year=as.numeric(year),
